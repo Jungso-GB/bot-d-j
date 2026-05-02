@@ -87,8 +87,15 @@ const Discord = require('discord.js');
 
 const bot = new Discord.Client({
   intents: new Discord.IntentsBitField([
-    Discord.GatewayIntentBits.Guilds,   // seul intent nécessaire pour les slash commands
-  ])
+    Discord.GatewayIntentBits.Guilds,
+    Discord.GatewayIntentBits.GuildMessageReactions, // pour les réactions rôles/métiers
+  ]),
+  // Partials nécessaires pour recevoir les réactions sur des messages non-cachés
+  partials: [
+    Discord.Partials.Message,
+    Discord.Partials.Channel,
+    Discord.Partials.Reaction,
+  ],
 });
 
 bot.settings = settings;
@@ -99,6 +106,7 @@ bot.commandEnabled = (name) => bot.settings.commandToggles?.[name] !== false;
 const loadCommands      = require('./Loader/loadCommands');
 const loadSlashCommands = require('./Loader/loadSlashCommands');
 const fetchGuildInfo    = require('./Helpers/fetchGuildInfo');
+const { syncReactions, handleReactionChange } = require('./Helpers/syncReactions');
 
 loadCommands(bot);
 
@@ -116,6 +124,32 @@ bot.on('ready', async () => {
   // Récupération initiale des infos de guilde (Raider.io), puis toutes les 24h
   fetchGuildInfo(settings.guildInfoFilePath);
   setInterval(() => fetchGuildInfo(settings.guildInfoFilePath), 24 * 60 * 60 * 1000);
+
+  // Synchronisation initiale des rôles et métiers depuis les réactions Discord
+  await syncReactions(bot);
+  // Re-sync toutes les heures pour rattraper les réactions manquées
+  setInterval(() => syncReactions(bot), 60 * 60 * 1000);
+});
+
+// ── Réactions en temps réel ──────────────────────────────────────────
+bot.on('messageReactionAdd', async (reaction, user) => {
+  if (user.bot) return;
+  try {
+    if (reaction.partial) await reaction.fetch();
+    await handleReactionChange(bot, reaction, user, 'add');
+  } catch (err) {
+    console.error('[reactions] Erreur messageReactionAdd :', err.message);
+  }
+});
+
+bot.on('messageReactionRemove', async (reaction, user) => {
+  if (user.bot) return;
+  try {
+    if (reaction.partial) await reaction.fetch();
+    await handleReactionChange(bot, reaction, user, 'remove');
+  } catch (err) {
+    console.error('[reactions] Erreur messageReactionRemove :', err.message);
+  }
 });
 
 bot.on('interactionCreate', async (interaction) => {

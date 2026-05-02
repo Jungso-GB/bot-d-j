@@ -60,17 +60,6 @@ module.exports = {
     },
     {
       type: 'STRING',
-      name: 'role',
-      description: 'Rôle en jeu.',
-      required: true,
-      choices: [
-        { name: 'Tank', value: 'Tank' },
-        { name: 'Heal', value: 'Heal' },
-        { name: 'DPS',  value: 'DPS'  },
-      ],
-    },
-    {
-      type: 'STRING',
       name: 'classe',
       description: 'Classe WoW (optionnel).',
       required: false,
@@ -80,6 +69,12 @@ module.exports = {
       type: 'STRING',
       name: 'titre',
       description: 'Titre fun affiché sur le site (ex: "Maître du jambon", optionnel).',
+      required: false,
+    },
+    {
+      type: 'STRING',
+      name: 'citation',
+      description: 'Citation affichée dans le profil (ex: "Le jambon, c\'est la vie.", optionnel).',
       required: false,
     },
   ],
@@ -94,10 +89,10 @@ module.exports = {
     const discordUser = interaction.options.getUser('membre');
     const pseudo      = interaction.options.getString('pseudo');
     const realm       = interaction.options.getString('realm').toLowerCase().trim();
-    const role        = interaction.options.getString('role');
     const classe      = interaction.options.getString('classe');
     const classColor  = classe ? WOW_CLASSES[classe] : '#8c7b65';
-    const titre       = interaction.options.getString('titre') || null;
+    const titre       = interaction.options.getString('titre')    || null;
+    const citation    = interaction.options.getString('citation') || null;
 
     const filePath = bot.settings.membersFilePath;
     const members  = readMembers(filePath);
@@ -121,10 +116,12 @@ module.exports = {
       realm:       realm,
       class:       classe || '',
       classColor:  classColor,
-      role:        role,
+      roles:       [],         // rempli par les réactions Discord
+      professions: [],         // rempli par les réactions Discord
       rank:        bot.settings.defaultRank,
-      titre:       titre,   // titre fun, null si absent
-      avatar:      avatar,  // null si non trouvé → initiales côté site
+      titre:       titre,
+      citation:    citation,
+      avatar:      avatar,
     };
 
     members.push(newMember);
@@ -133,10 +130,12 @@ module.exports = {
     console.log(`[add] ${discordUser.username} → ${pseudo} (${realm}) ajouté`);
     await backupMembers(bot, filePath, 'Ajout', pseudo);
 
-    const avatarInfo = avatar ? '✅ Avatar récupéré automatiquement.' : '⚠️ Avatar introuvable sur Raider.io — initiales affichées. Utilise `/refresh-avatars` après que le personnage soit enregistré.';
+    const avatarInfo = avatar
+      ? '✅ Avatar récupéré automatiquement.'
+      : '⚠️ Avatar introuvable sur Raider.io — initiales affichées. Utilise `/refresh-avatars` après enregistrement du personnage.';
 
     return interaction.followUp({
-      content: `✅ **${pseudo}** (\`${discordUser.username}\`) ajouté comme **${role}** sur *${realm}*. Rang : ${bot.settings.defaultRank}.\n${avatarInfo}`,
+      content: `✅ **${pseudo}** (\`${discordUser.username}\`) ajouté sur *${realm}*. Rang : ${bot.settings.defaultRank}.\n${avatarInfo}\n💡 Les rôles et métiers seront synchronisés automatiquement depuis les réactions Discord.`,
       ephemeral: true,
     });
   },

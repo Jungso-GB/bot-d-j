@@ -40,4 +40,32 @@ module.exports = {
 
   // Rang attribué par défaut à tout nouveau membre
   defaultRank: 'Jambon Frais',
+
+  // ── Réactions Discord ──────────────────────────────────────────────
+  // Message où les membres réagissent pour choisir leur(s) rôle(s)
+  rolesChannelId:  '1432474144800509960',
+  rolesMessageId:  '1433499168382517369',
+  // Message où les membres réagissent pour déclarer leurs métiers
+  professionsChannelId: '1432474144800509960',
+  professionsMessageId: '1449782387742605502',
+
+  // Mapping emoji name → rôle (comparaison normalisée : sans casse/espaces/_)
+  roleEmojis: {
+    'heal': 'Heal',
+    'tank': 'Tank',
+    'dps':  'DPS',
+  },
+
+  // Mapping emoji name → métier
+  professionEmojis: {
+    'Alchemie':        'Alchimiste',
+    'Couture':         'Couturier',
+    'Calligraphie':    'Calligraphe',
+    'Enchantement':    'Enchanteur',
+    'Forge':           'Forgeron',
+    'Ingenierie':      'Ingénieur',
+    'Joaillerie':      'Joaillier',
+    'Travail du cuir': 'Travail du cuir',
+    'Cuisine':         'Cuisine',
+  },
 };

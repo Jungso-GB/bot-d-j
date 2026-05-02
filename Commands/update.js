@@ -62,17 +62,6 @@ module.exports = {
     },
     {
       type: 'STRING',
-      name: 'role',
-      description: 'Nouveau rôle en jeu.',
-      required: false,
-      choices: [
-        { name: 'Tank', value: 'Tank' },
-        { name: 'Heal', value: 'Heal' },
-        { name: 'DPS',  value: 'DPS'  },
-      ],
-    },
-    {
-      type: 'STRING',
       name: 'rang',
       description: 'Nouveau grade dans la guilde.',
       required: false,
@@ -89,6 +78,12 @@ module.exports = {
       type: 'STRING',
       name: 'titre',
       description: 'Titre fun affiché sur le site. Envoie "aucun" pour le supprimer.',
+      required: false,
+    },
+    {
+      type: 'STRING',
+      name: 'citation',
+      description: 'Citation dans le profil. Envoie "aucun" pour la supprimer.',
       required: false,
     },
   ],
@@ -112,18 +107,16 @@ module.exports = {
       });
     }
 
-    // Récupère les nouvelles valeurs (null = non fourni = pas de changement)
-    const newPseudo  = interaction.options.getString('pseudo');
-    const newRealm   = interaction.options.getString('realm')?.toLowerCase().trim() ?? null;
-    const newRole    = interaction.options.getString('role');
-    const newRang    = interaction.options.getString('rang');
-    const newClasse  = interaction.options.getString('classe');
-    const newTitre   = interaction.options.getString('titre');
+    const newPseudo   = interaction.options.getString('pseudo');
+    const newRealm    = interaction.options.getString('realm')?.toLowerCase().trim() ?? null;
+    const newRang     = interaction.options.getString('rang');
+    const newClasse   = interaction.options.getString('classe');
+    const newTitre    = interaction.options.getString('titre');
+    const newCitation = interaction.options.getString('citation');
 
-    // Vérifie qu'au moins un champ est fourni
-    if (!newPseudo && !newRealm && !newRole && !newRang && !newClasse && !newTitre) {
+    if (!newPseudo && !newRealm && !newRang && !newClasse && !newTitre && !newCitation) {
       return interaction.followUp({
-        content: '⚠️ Fournis au moins un champ à modifier.',
+        content: '⚠️ Fournis au moins un champ à modifier.\n💡 Les rôles et métiers se modifient via les réactions Discord.',
         ephemeral: true,
       });
     }
@@ -139,10 +132,6 @@ module.exports = {
       member.realm = newRealm;
       changes.push(`realm → **${newRealm}**`);
     }
-    if (newRole && newRole !== member.role) {
-      member.role = newRole;
-      changes.push(`rôle → **${newRole}**`);
-    }
     if (newRang && newRang !== member.rank) {
       member.rank = newRang;
       changes.push(`grade → **${newRang}**`);
@@ -153,16 +142,25 @@ module.exports = {
       changes.push(`classe → **${newClasse}**`);
     }
     if (newTitre !== null) {
-      if (newTitre.toLowerCase() === 'aucun') {
+      if (newTitre?.toLowerCase() === 'aucun') {
         member.titre = null;
         changes.push('titre fun → *supprimé*');
-      } else if (newTitre !== member.titre) {
+      } else if (newTitre && newTitre !== member.titre) {
         member.titre = newTitre;
         changes.push(`titre fun → *« ${newTitre} »*`);
       }
     }
+    if (newCitation !== null) {
+      if (newCitation?.toLowerCase() === 'aucun') {
+        member.citation = null;
+        changes.push('citation → *supprimée*');
+      } else if (newCitation && newCitation !== member.citation) {
+        member.citation = newCitation;
+        changes.push(`citation → *« ${newCitation} »*`);
+      }
+    }
 
-    // Si le pseudo ou le realm a changé, on re-fetch l'avatar
+    // Re-fetch avatar si pseudo ou realm a changé
     if (newPseudo || newRealm) {
       const newAvatar = await fetchAvatar(member.name, member.realm);
       if (newAvatar) {
