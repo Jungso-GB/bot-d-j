@@ -27,8 +27,8 @@ async function fetchAvatar(name, realm, region = 'eu') {
 
     const data = await res.json();
     if (!data.thumbnail_url) return null;
-    // Remplace -avatar.jpg (84×84) par -inset.jpg (230×116) pour une meilleure qualité
-    return data.thumbnail_url.replace(/-avatar\.jpg(\?|$)/, '-inset.jpg$1');
+    // Remplace -avatar.jpg (84×84) par -main.jpg (portrait HD) pour la meilleure qualité
+    return data.thumbnail_url.replace(/-avatar\.jpg(\?|$)/, '-main.jpg$1');
 
   } catch (err) {
     console.error(`[fetchAvatar] Erreur pour ${name} :`, err.message);

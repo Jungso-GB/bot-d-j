@@ -2,6 +2,8 @@ const fs            = require('fs');
 const backupMembers = require('../Helpers/backupMembers');
 const fetchAvatar   = require('../Helpers/fetchAvatar');
 
+// Les grades sont désormais synchronisés automatiquement depuis les rôles Discord (syncRanks).
+
 const WOW_CLASSES = {
   'Guerrier':             '#C79C6E',
   'Paladin':              '#F58CBA',
@@ -17,8 +19,6 @@ const WOW_CLASSES = {
   'Chasseur de démons':   '#A330C9',
   'Évocateur':            '#33937F',
 };
-
-const RANKS = ['Jambon Frais', 'Jambon Avarié', 'Jambonneau', 'Cuisinier', 'Tavernier'];
 
 function isAuthorized(bot, interaction) {
   const { allowedUsers, allowedRoles } = bot.settings.commands;
@@ -62,13 +62,6 @@ module.exports = {
     },
     {
       type: 'STRING',
-      name: 'rang',
-      description: 'Nouveau grade dans la guilde.',
-      required: false,
-      choices: RANKS.map(r => ({ name: r, value: r })),
-    },
-    {
-      type: 'STRING',
       name: 'classe',
       description: 'Nouvelle classe WoW.',
       required: false,
@@ -109,14 +102,13 @@ module.exports = {
 
     const newPseudo   = interaction.options.getString('pseudo');
     const newRealm    = interaction.options.getString('realm')?.toLowerCase().trim() ?? null;
-    const newRang     = interaction.options.getString('rang');
     const newClasse   = interaction.options.getString('classe');
     const newTitre    = interaction.options.getString('titre');
     const newCitation = interaction.options.getString('citation');
 
-    if (!newPseudo && !newRealm && !newRang && !newClasse && !newTitre && !newCitation) {
+    if (!newPseudo && !newRealm && !newClasse && !newTitre && !newCitation) {
       return interaction.followUp({
-        content: '⚠️ Fournis au moins un champ à modifier.\n💡 Les rôles et métiers se modifient via les réactions Discord.',
+        content: '⚠️ Fournis au moins un champ à modifier.\n💡 Les rôles, métiers et grades se synchronisent automatiquement depuis Discord.',
         ephemeral: true,
       });
     }
@@ -131,10 +123,6 @@ module.exports = {
     if (newRealm && newRealm !== member.realm) {
       member.realm = newRealm;
       changes.push(`realm → **${newRealm}**`);
-    }
-    if (newRang && newRang !== member.rank) {
-      member.rank = newRang;
-      changes.push(`grade → **${newRang}**`);
     }
     if (newClasse && newClasse !== member.class) {
       member.class      = newClasse;

@@ -107,6 +107,7 @@ const loadCommands      = require('./Loader/loadCommands');
 const loadSlashCommands = require('./Loader/loadSlashCommands');
 const fetchGuildInfo    = require('./Helpers/fetchGuildInfo');
 const { syncReactions, handleReactionChange } = require('./Helpers/syncReactions');
+const { syncRanks }     = require('./Helpers/syncRanks');
 
 loadCommands(bot);
 
@@ -129,6 +130,11 @@ bot.on('ready', async () => {
   await syncReactions(bot);
   // Re-sync toutes les heures pour rattraper les réactions manquées
   setInterval(() => syncReactions(bot), 60 * 60 * 1000);
+
+  // Synchronisation des grades depuis les rôles Discord (après les réactions pour éviter les conflits)
+  await syncRanks(bot);
+  // Re-sync des grades toutes les heures
+  setInterval(() => syncRanks(bot), 60 * 60 * 1000);
 });
 
 // ── Réactions en temps réel ──────────────────────────────────────────

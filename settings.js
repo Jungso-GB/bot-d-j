@@ -38,8 +38,17 @@ module.exports = {
     'import-alts': true,
   },
 
-  // Rang attribué par défaut à tout nouveau membre
+  // Rang attribué par défaut à tout nouveau membre (avant la 1ère synchro Discord)
   defaultRank: 'Jambon Frais',
+
+  // IDs des rôles Discord correspondant aux grades de guilde.
+  // La synchro automatique attribue le grade le plus élevé détenu par le membre.
+  rankRoles: {
+    '1432474143642619989': 'Tavernier',
+    '1432474143642619988': 'Cuisinier',
+    '1432474143642619986': 'Jambonneau',
+    '1444328874681827582': 'Jambon Frais',
+  },
 
   // ── Réactions Discord ──────────────────────────────────────────────
   // Message où les membres réagissent pour choisir leur(s) rôle(s)
