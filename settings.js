@@ -11,8 +11,10 @@ module.exports = {
   // Laisser vide ('') pour désactiver la sauvegarde
   backupChannelId: '1499834446642413658',
 
-  // Chemin vers le fichier JSON des membres (partagé avec le site)
-  membersFilePath: path.join(__dirname, 'data', 'members.json'),
+  // Chemin vers le fichier JSON des membres.
+  // En prod sur Render : variable d'env MEMBERS_FILE_PATH=/data/members.json
+  // En local : ./data/members.json par défaut
+  membersFilePath: process.env.MEMBERS_FILE_PATH || path.join(__dirname, 'data', 'members.json'),
 
   commands: {
     // Utilisateurs Discord autorisés à utiliser /add, /remove

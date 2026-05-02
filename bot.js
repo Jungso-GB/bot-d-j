@@ -16,9 +16,12 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => res.send('🍖 Donjons & Jambons Bot — online'));
 
 // Endpoint que le site appellera pour récupérer les membres
+// (settings est chargé plus bas, on utilise le chemin directement depuis l'env)
 app.get('/api/members', (req, res) => {
   try {
-    const data = fs.readFileSync(require('./settings').membersFilePath, 'utf8');
+    const filePath = process.env.MEMBERS_FILE_PATH
+      || require('path').join(__dirname, 'data', 'members.json');
+    const data = fs.readFileSync(filePath, 'utf8');
     res.setHeader('Content-Type', 'application/json');
     res.send(data);
   } catch {
@@ -29,8 +32,25 @@ app.get('/api/members', (req, res) => {
 app.listen(PORT, () => console.log(`🌐 Serveur HTTP en écoute sur le port ${PORT}`));
 // ── Fin serveur HTTP ──
 
-const Discord = require('discord.js');
+// ── Initialisation du fichier membres (disque persistant) ──
+// Si le fichier n'existe pas encore (premier déploiement sur Render),
+// on le crée avec un tableau vide plutôt que de planter au premier appel.
 const settings = require('./settings');
+const membersDir = require('path').dirname(settings.membersFilePath);
+if (!fs.existsSync(membersDir)) {
+  fs.mkdirSync(membersDir, { recursive: true });
+  console.log(`📁 Dossier créé : ${membersDir}`);
+}
+if (!fs.existsSync(settings.membersFilePath)) {
+  fs.writeFileSync(settings.membersFilePath, '[]', 'utf8');
+  console.log(`📄 members.json initialisé sur le disque persistant : ${settings.membersFilePath}`);
+} else {
+  const count = JSON.parse(fs.readFileSync(settings.membersFilePath, 'utf8')).length;
+  console.log(`📄 members.json chargé (${count} membre(s)) depuis : ${settings.membersFilePath}`);
+}
+// ── Fin initialisation ──
+
+const Discord = require('discord.js');
 
 const bot = new Discord.Client({
   intents: new Discord.IntentsBitField([
