@@ -1,20 +1,20 @@
-const fs   = require('fs');
-const path = require('path');
+const fs            = require('fs');
+const backupMembers = require('../Helpers/backupMembers');
 
 const WOW_CLASSES = {
-  'Guerrier':            '#C79C6E',
-  'Paladin':             '#F58CBA',
-  'Chasseur':            '#ABD473',
-  'Voleur':              '#FFF569',
-  'Prêtre':              '#FFFFFF',
-  'Chevalier de la mort':'#C41F3B',
-  'Chaman':              '#0070DE',
-  'Mage':                '#69CCF0',
-  'Démoniste':           '#9482C9',
-  'Moine':               '#00FF96',
-  'Druide':              '#FF7D0A',
-  'Chasseur de démons':  '#A330C9',
-  'Évocateur':           '#33937F',
+  'Guerrier':             '#C79C6E',
+  'Paladin':              '#F58CBA',
+  'Chasseur':             '#ABD473',
+  'Voleur':               '#FFF569',
+  'Prêtre':               '#FFFFFF',
+  'Chevalier de la mort': '#C41F3B',
+  'Chaman':               '#0070DE',
+  'Mage':                 '#69CCF0',
+  'Démoniste':            '#9482C9',
+  'Moine':                '#00FF96',
+  'Druide':               '#FF7D0A',
+  'Chasseur de démons':   '#A330C9',
+  'Évocateur':            '#33937F',
 };
 
 function isAuthorized(bot, interaction) {
@@ -84,18 +84,18 @@ module.exports = {
       return interaction.followUp({ content: '🚫 Tu n\'as pas la permission d\'utiliser cette commande.', ephemeral: true });
     }
 
-    const discordUser  = interaction.options.getUser('membre');
-    const pseudo       = interaction.options.getString('pseudo');
-    const realm        = interaction.options.getString('realm').toLowerCase().trim();
-    const role         = interaction.options.getString('role');
-    const classe       = interaction.options.getString('classe');
-    const classColor   = classe ? WOW_CLASSES[classe] : '#8c7b65';
+    const discordUser = interaction.options.getUser('membre');
+    const pseudo      = interaction.options.getString('pseudo');
+    const realm       = interaction.options.getString('realm').toLowerCase().trim();
+    const role        = interaction.options.getString('role');
+    const classe      = interaction.options.getString('classe');
+    const classColor  = classe ? WOW_CLASSES[classe] : '#8c7b65';
 
     const filePath = bot.settings.membersFilePath;
     const members  = readMembers(filePath);
 
     if (members.find(m => m.discordId === discordUser.id)) {
-      return interaction.followUp({ content: `⚠️ **${discordUser.username}** est déjà dans la liste des membres.`, ephemeral: true });
+      return interaction.followUp({ content: `⚠️ **${discordUser.username}** est déjà dans la liste.`, ephemeral: true });
     }
 
     const newMember = {
@@ -115,8 +115,11 @@ module.exports = {
 
     console.log(`[add] ${discordUser.username} → ${pseudo} (${realm}) ajouté`);
 
+    // Backup dans le canal de dev
+    await backupMembers(bot, filePath, 'Ajout', pseudo);
+
     return interaction.followUp({
-      content: `✅ **${pseudo}** (\`${discordUser.username}\`) a été ajouté comme **${role}** sur *${realm}*. Rang : ${bot.settings.defaultRank}.`,
+      content: `✅ **${pseudo}** (\`${discordUser.username}\`) ajouté comme **${role}** sur *${realm}*. Rang : ${bot.settings.defaultRank}.`,
       ephemeral: true,
     });
   },

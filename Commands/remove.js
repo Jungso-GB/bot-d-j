@@ -1,4 +1,5 @@
-const fs   = require('fs');
+const fs            = require('fs');
+const backupMembers = require('../Helpers/backupMembers');
 
 function isAuthorized(bot, interaction) {
   const { allowedUsers, allowedRoles } = bot.settings.commands;
@@ -43,7 +44,7 @@ module.exports = {
 
     const index = members.findIndex(m => m.discordId === discordUser.id);
     if (index === -1) {
-      return interaction.followUp({ content: `⚠️ **${discordUser.username}** n'est pas dans la liste des membres.`, ephemeral: true });
+      return interaction.followUp({ content: `⚠️ **${discordUser.username}** n'est pas dans la liste.`, ephemeral: true });
     }
 
     const removed = members.splice(index, 1)[0];
@@ -51,8 +52,11 @@ module.exports = {
 
     console.log(`[remove] ${discordUser.username} → ${removed.name} retiré`);
 
+    // Backup dans le canal de dev
+    await backupMembers(bot, filePath, 'Suppression', removed.name);
+
     return interaction.followUp({
-      content: `✅ **${removed.name}** (\`${discordUser.username}\`) a été retiré de la guilde.`,
+      content: `✅ **${removed.name}** (\`${discordUser.username}\`) retiré de la guilde.`,
       ephemeral: true,
     });
   },

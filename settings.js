@@ -7,6 +7,10 @@ module.exports = {
   // Canal où le bot annonce son démarrage
   startupChannelId: '1499834446642413658',
 
+  // Canal Discord où members.json est sauvegardé après chaque modification
+  // Laisser vide ('') pour désactiver la sauvegarde
+  backupChannelId: '1499834446642413658',
+
   // Chemin vers le fichier JSON des membres (partagé avec le site)
   membersFilePath: path.join(__dirname, 'data', 'members.json'),
 

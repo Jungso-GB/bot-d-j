@@ -1,6 +1,34 @@
 require('module-alias/register');
 require('dotenv').config();
 
+// ── Serveur HTTP (health check + API membres) ──
+const express = require('express');
+const fs      = require('fs');
+const app     = express();
+const PORT    = process.env.PORT || 10000;
+
+// Autorise le site à appeler l'API depuis n'importe quelle origine
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+});
+
+app.get('/', (req, res) => res.send('🍖 Donjons & Jambons Bot — online'));
+
+// Endpoint que le site appellera pour récupérer les membres
+app.get('/api/members', (req, res) => {
+  try {
+    const data = fs.readFileSync(require('./settings').membersFilePath, 'utf8');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  } catch {
+    res.status(500).json({ error: 'Impossible de lire members.json' });
+  }
+});
+
+app.listen(PORT, () => console.log(`🌐 Serveur HTTP en écoute sur le port ${PORT}`));
+// ── Fin serveur HTTP ──
+
 const Discord = require('discord.js');
 const settings = require('./settings');
 
