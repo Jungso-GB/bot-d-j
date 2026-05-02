@@ -25,6 +25,14 @@ function parseGrmLog(grmData, guildKey) {
   const logs = grmData[guildKey];
   if (!Array.isArray(logs)) throw new Error(`Clé "${guildKey}" introuvable ou invalide dans le fichier.`);
 
+  // Extraire le realm depuis la clé "GuildeNom-RealmName" → "realm-name"
+  // Ex: "Donjons et Jambons-KirinTor" → "kirin-tor"
+  const realmRaw = guildKey.includes('-') ? guildKey.split('-').pop() : '';
+  const guildRealm = realmRaw
+    .replace(/([a-z])([A-Z])/g, '$1-$2')  // KirinTor → Kirin-Tor
+    .toLowerCase()                          // kirin-tor
+    || 'kirin-tor';
+
   // ── Structures internes ──
   const mainOf       = {};  // normAlt  → normMain
   const altsOf       = {};  // normMain → Set<normAlt>
@@ -135,6 +143,7 @@ function parseGrmLog(grmData, guildKey) {
       alts: [...altSet].map(normAlt => ({
         name:       displayNames[normAlt] || normAlt,
         normalized: normAlt,
+        realm:      guildRealm,  // même realm que la guilde par défaut
       })),
     };
     const info = characters[normMain];
@@ -158,6 +167,7 @@ function parseGrmLog(grmData, guildKey) {
   return {
     updatedAt:          new Date().toISOString(),
     guildKey,
+    guildRealm,
     totalRelationships: Object.keys(altOf).length,
     totalMains:         Object.keys(relations).length,
     relations,   // normMain → { displayName, alts, joinDate?, invitedBy? }
