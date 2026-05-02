@@ -46,6 +46,22 @@ app.get('/api/alts', (req, res) => {
   }
 });
 
+// Endpoint pour les événements Raid Helper
+app.get('/api/events', (req, res) => {
+  try {
+    const filePath = process.env.EVENTS_FILE_PATH
+      || pathModule.join(__dirname, 'data', 'events.json');
+    if (!fs.existsSync(filePath)) {
+      return res.json({ updatedAt: null, totalEvents: 0, events: [] });
+    }
+    const data = fs.readFileSync(filePath, 'utf8');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  } catch {
+    res.status(500).json({ error: 'Impossible de lire events.json' });
+  }
+});
+
 // Endpoint pour les infos de la guilde (compte total Raider.io)
 app.get('/api/guild-info', (req, res) => {
   try {
@@ -103,11 +119,12 @@ bot.commands = new Discord.Collection();
 
 bot.commandEnabled = (name) => bot.settings.commandToggles?.[name] !== false;
 
-const loadCommands      = require('./Loader/loadCommands');
-const loadSlashCommands = require('./Loader/loadSlashCommands');
-const fetchGuildInfo    = require('./Helpers/fetchGuildInfo');
+const loadCommands           = require('./Loader/loadCommands');
+const loadSlashCommands      = require('./Loader/loadSlashCommands');
+const fetchGuildInfo         = require('./Helpers/fetchGuildInfo');
 const { syncReactions, handleReactionChange } = require('./Helpers/syncReactions');
-const { syncRanks }     = require('./Helpers/syncRanks');
+const { syncRanks }          = require('./Helpers/syncRanks');
+const fetchRaidHelperEvents  = require('./Helpers/fetchRaidHelperEvents');
 
 loadCommands(bot);
 
@@ -125,6 +142,10 @@ bot.on('ready', async () => {
   // Récupération initiale des infos de guilde (Raider.io), puis toutes les 24h
   fetchGuildInfo(settings.guildInfoFilePath);
   setInterval(() => fetchGuildInfo(settings.guildInfoFilePath), 24 * 60 * 60 * 1000);
+
+  // Récupération des événements Raid Helper, puis toutes les 24h
+  fetchRaidHelperEvents(settings);
+  setInterval(() => fetchRaidHelperEvents(settings), 24 * 60 * 60 * 1000);
 
   // Synchronisation initiale des rôles et métiers depuis les réactions Discord
   await syncReactions(bot);

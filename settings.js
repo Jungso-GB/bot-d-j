@@ -22,6 +22,14 @@ module.exports = {
   // Chemin vers le fichier JSON des infos de la guilde (compte Raider.io)
   guildInfoFilePath: process.env.GUILD_INFO_FILE_PATH || path.join(__dirname, 'data', 'guild-info.json'),
 
+  // Chemin vers le fichier JSON des événements Raid Helper
+  eventsFilePath: process.env.EVENTS_FILE_PATH || path.join(__dirname, 'data', 'events.json'),
+
+  // Clé API Raid Helper — variable d'env RAID_HELPER_API_KEY (prioritaire) ou fallback
+  raidHelperApiKey:   process.env.RAID_HELPER_API_KEY   || 'ZFJb5zIm5ckB7V3APsuVH0FY0K3kGfXg57vwj8Rz',
+  // ID serveur Discord pour Raid Helper (variable d'env ou celui du serveur)
+  raidHelperServerId: process.env.RAID_HELPER_SERVER_ID || '1432474143252811861',
+
   commands: {
     // Utilisateurs Discord autorisés à utiliser /add, /remove
     allowedUsers: ['207992750988197889'],
