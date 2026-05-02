@@ -23,17 +23,14 @@ async function fetchRaidHelperEvents(settings) {
     return;
   }
 
-  // On ne récupère que les événements futurs (StartTimeFilter = maintenant)
-  const startFilter = Math.floor(Date.now() / 1000);
-
   const url = `https://raid-helper.xyz/api/v4/servers/${raidHelperServerId}/events`;
 
   try {
+    // On récupère TOUS les événements (passés + futurs) pour garder les 6 les plus récents
     const res = await fetch(url, {
       headers: {
-        Authorization:     raidHelperApiKey,
-        StartTimeFilter:   String(startFilter),
-        IncludeSignUps:    'true',
+        Authorization:  raidHelperApiKey,
+        IncludeSignUps: 'true',
       },
     });
 
@@ -43,7 +40,19 @@ async function fetchRaidHelperEvents(settings) {
     }
 
     const data = await res.json();
-    const events = (data.postedEvents || []).sort((a, b) => (a.startTime ?? 0) - (b.startTime ?? 0));
+    const now  = Math.floor(Date.now() / 1000);
+
+    // Trier par date : futurs d'abord (les plus proches), puis passés (les plus récents)
+    const all = (data.postedEvents || []).sort((a, b) => {
+      const aFut = (a.startTime ?? 0) >= now;
+      const bFut = (b.startTime ?? 0) >= now;
+      if (aFut && bFut) return (a.startTime ?? 0) - (b.startTime ?? 0);  // futurs : croissant
+      if (!aFut && !bFut) return (b.startTime ?? 0) - (a.startTime ?? 0); // passés : décroissant
+      return aFut ? -1 : 1; // futurs avant passés
+    });
+
+    // Conserver les 6 premiers (futurs prioritaires + passés récents pour compléter)
+    const events = all.slice(0, 6);
 
     const payload = {
       updatedAt:   new Date().toISOString(),
