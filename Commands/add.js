@@ -1,5 +1,6 @@
 const fs            = require('fs');
 const backupMembers = require('../Helpers/backupMembers');
+const fetchAvatar   = require('../Helpers/fetchAvatar');
 
 const WOW_CLASSES = {
   'Guerrier':             '#C79C6E',
@@ -98,6 +99,14 @@ module.exports = {
       return interaction.followUp({ content: `⚠️ **${discordUser.username}** est déjà dans la liste.`, ephemeral: true });
     }
 
+    // Tentative de récupération de l'avatar via Raider.io
+    const avatar = await fetchAvatar(pseudo, realm);
+    if (avatar) {
+      console.log(`[add] Avatar trouvé pour ${pseudo} : ${avatar}`);
+    } else {
+      console.log(`[add] Pas d'avatar Raider.io pour ${pseudo}, initiales affichées`);
+    }
+
     const newMember = {
       discordId:   discordUser.id,
       discordName: discordUser.username,
@@ -107,19 +116,19 @@ module.exports = {
       classColor:  classColor,
       role:        role,
       rank:        bot.settings.defaultRank,
-      avatar:      null,
+      avatar:      avatar, // null si non trouvé → initiales côté site
     };
 
     members.push(newMember);
     writeMembers(filePath, members);
 
     console.log(`[add] ${discordUser.username} → ${pseudo} (${realm}) ajouté`);
-
-    // Backup dans le canal de dev
     await backupMembers(bot, filePath, 'Ajout', pseudo);
 
+    const avatarInfo = avatar ? '✅ Avatar récupéré automatiquement.' : '⚠️ Avatar introuvable sur Raider.io — initiales affichées. Utilise `/refresh-avatars` après que le personnage soit enregistré.';
+
     return interaction.followUp({
-      content: `✅ **${pseudo}** (\`${discordUser.username}\`) ajouté comme **${role}** sur *${realm}*. Rang : ${bot.settings.defaultRank}.`,
+      content: `✅ **${pseudo}** (\`${discordUser.username}\`) ajouté comme **${role}** sur *${realm}*. Rang : ${bot.settings.defaultRank}.\n${avatarInfo}`,
       ephemeral: true,
     });
   },

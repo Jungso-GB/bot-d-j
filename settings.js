@@ -25,6 +25,7 @@ module.exports = {
     add: true,
     remove: true,
     list: true,
+    'refresh-avatars': true,
   },
 
   // Rang attribué par défaut à tout nouveau membre
