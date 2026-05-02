@@ -22,6 +22,8 @@ module.exports = async (bot) => {
         );
       } else if (opt.type === 'STRING') {
         slash.addStringOption(o => o.setName(opt.name).setDescription(opt.description).setRequired(opt.required));
+      } else if (opt.type === 'ATTACHMENT') {
+        slash.addAttachmentOption(o => o.setName(opt.name).setDescription(opt.description).setRequired(opt.required));
       }
     }
 

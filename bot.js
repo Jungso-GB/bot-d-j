@@ -15,17 +15,50 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => res.send('🍖 Donjons & Jambons Bot — online'));
 
+const pathModule = require('path');
+
 // Endpoint que le site appellera pour récupérer les membres
-// (settings est chargé plus bas, on utilise le chemin directement depuis l'env)
 app.get('/api/members', (req, res) => {
   try {
     const filePath = process.env.MEMBERS_FILE_PATH
-      || require('path').join(__dirname, 'data', 'members.json');
+      || pathModule.join(__dirname, 'data', 'members.json');
     const data = fs.readFileSync(filePath, 'utf8');
     res.setHeader('Content-Type', 'application/json');
     res.send(data);
   } catch {
     res.status(500).json({ error: 'Impossible de lire members.json' });
+  }
+});
+
+// Endpoint pour les relations Main/ALT (généré par /import-alts)
+app.get('/api/alts', (req, res) => {
+  try {
+    const filePath = process.env.ALTS_FILE_PATH
+      || pathModule.join(__dirname, 'data', 'alts.json');
+    if (!fs.existsSync(filePath)) {
+      return res.json({ relations: {}, altOf: {}, characters: {}, totalRelationships: 0, totalMains: 0 });
+    }
+    const data = fs.readFileSync(filePath, 'utf8');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  } catch {
+    res.status(500).json({ error: 'Impossible de lire alts.json' });
+  }
+});
+
+// Endpoint pour les infos de la guilde (compte total Raider.io)
+app.get('/api/guild-info', (req, res) => {
+  try {
+    const filePath = process.env.GUILD_INFO_FILE_PATH
+      || pathModule.join(__dirname, 'data', 'guild-info.json');
+    if (!fs.existsSync(filePath)) {
+      return res.json({ memberCount: null });
+    }
+    const data = fs.readFileSync(filePath, 'utf8');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  } catch {
+    res.status(500).json({ error: 'Impossible de lire guild-info.json' });
   }
 });
 
@@ -36,7 +69,7 @@ app.listen(PORT, () => console.log(`🌐 Serveur HTTP en écoute sur le port ${P
 // Si le fichier n'existe pas encore (premier déploiement sur Render),
 // on le crée avec un tableau vide plutôt que de planter au premier appel.
 const settings = require('./settings');
-const membersDir = require('path').dirname(settings.membersFilePath);
+const membersDir = pathModule.dirname(settings.membersFilePath);
 if (!fs.existsSync(membersDir)) {
   fs.mkdirSync(membersDir, { recursive: true });
   console.log(`📁 Dossier créé : ${membersDir}`);
@@ -65,6 +98,7 @@ bot.commandEnabled = (name) => bot.settings.commandToggles?.[name] !== false;
 
 const loadCommands      = require('./Loader/loadCommands');
 const loadSlashCommands = require('./Loader/loadSlashCommands');
+const fetchGuildInfo    = require('./Helpers/fetchGuildInfo');
 
 loadCommands(bot);
 
@@ -78,6 +112,10 @@ bot.on('ready', async () => {
     const channel = bot.channels.cache.get(settings.startupChannelId);
     if (channel) channel.send('🍺 Je suis de nouveau là !');
   }
+
+  // Récupération initiale des infos de guilde (Raider.io), puis toutes les 24h
+  fetchGuildInfo(settings.guildInfoFilePath);
+  setInterval(() => fetchGuildInfo(settings.guildInfoFilePath), 24 * 60 * 60 * 1000);
 });
 
 bot.on('interactionCreate', async (interaction) => {

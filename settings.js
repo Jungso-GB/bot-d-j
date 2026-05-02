@@ -16,6 +16,12 @@ module.exports = {
   // En local : ./data/members.json par défaut
   membersFilePath: process.env.MEMBERS_FILE_PATH || path.join(__dirname, 'data', 'members.json'),
 
+  // Chemin vers le fichier JSON des relations Main/ALT (généré par /import-alts)
+  altsFilePath: process.env.ALTS_FILE_PATH || path.join(__dirname, 'data', 'alts.json'),
+
+  // Chemin vers le fichier JSON des infos de la guilde (compte Raider.io)
+  guildInfoFilePath: process.env.GUILD_INFO_FILE_PATH || path.join(__dirname, 'data', 'guild-info.json'),
+
   commands: {
     // Utilisateurs Discord autorisés à utiliser /add, /remove
     allowedUsers: ['207992750988197889'],
@@ -29,6 +35,7 @@ module.exports = {
     list: true,
     update: true,
     'refresh-avatars': true,
+    'import-alts': true,
   },
 
   // Rang attribué par défaut à tout nouveau membre
