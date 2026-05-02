@@ -55,7 +55,7 @@ module.exports = {
     {
       type: 'STRING',
       name: 'realm',
-      description: 'Royaume WoW (ex: kirin-tor).',
+      description: 'Royaume WoW (ex: kirin-tor, les-clairvoyants, les-sentinelles).',
       required: true,
     },
     {
@@ -76,6 +76,12 @@ module.exports = {
       required: false,
       choices: Object.keys(WOW_CLASSES).map(c => ({ name: c, value: c })),
     },
+    {
+      type: 'STRING',
+      name: 'titre',
+      description: 'Titre fun affiché sur le site (ex: "Maître du jambon", optionnel).',
+      required: false,
+    },
   ],
 
   async run(bot, interaction) {
@@ -91,6 +97,7 @@ module.exports = {
     const role        = interaction.options.getString('role');
     const classe      = interaction.options.getString('classe');
     const classColor  = classe ? WOW_CLASSES[classe] : '#8c7b65';
+    const titre       = interaction.options.getString('titre') || null;
 
     const filePath = bot.settings.membersFilePath;
     const members  = readMembers(filePath);
@@ -116,7 +123,8 @@ module.exports = {
       classColor:  classColor,
       role:        role,
       rank:        bot.settings.defaultRank,
-      avatar:      avatar, // null si non trouvé → initiales côté site
+      titre:       titre,   // titre fun, null si absent
+      avatar:      avatar,  // null si non trouvé → initiales côté site
     };
 
     members.push(newMember);

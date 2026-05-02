@@ -27,6 +27,7 @@ module.exports = {
     add: true,
     remove: true,
     list: true,
+    update: true,
     'refresh-avatars': true,
   },
 
