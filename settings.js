@@ -44,6 +44,7 @@ module.exports = {
     update: true,
     'refresh-avatars': true,
     'import-alts': true,
+    'refresh-ranks': true,
   },
 
   // Rang attribué par défaut à tout nouveau membre (avant la 1ère synchro Discord)

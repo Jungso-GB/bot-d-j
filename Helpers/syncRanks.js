@@ -39,6 +39,7 @@ async function syncRanks(bot) {
   }
 
   let changed = false;
+  const updates = []; // liste des changements pour le rapport
 
   for (const member of members) {
     if (!member.discordId) continue;
@@ -70,6 +71,7 @@ async function syncRanks(bot) {
 
     if (member.rank !== bestRank) {
       console.log(`[syncRanks] ${member.name} : "${member.rank}" → "${bestRank}"`);
+      updates.push({ name: member.name, from: member.rank, to: bestRank });
       member.rank = bestRank;
       changed = true;
     }
@@ -77,10 +79,12 @@ async function syncRanks(bot) {
 
   if (changed) {
     fs.writeFileSync(membersFilePath, JSON.stringify(members, null, 2), 'utf8');
-    console.log('[syncRanks] members.json mis à jour avec les grades Discord');
+    console.log(`[syncRanks] members.json mis à jour avec les grades Discord (${updates.length} changement(s))`);
   } else {
     console.log('[syncRanks] Grades déjà à jour.');
   }
+
+  return { changed, total: members.length, updates };
 }
 
 module.exports = { syncRanks };
