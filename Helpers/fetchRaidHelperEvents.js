@@ -68,9 +68,14 @@ async function fetchRaidHelperEvents(settings) {
       return aFut ? -1 : 1; // futurs avant passés
     });
 
-    // Conserver les 6 premiers (futurs prioritaires + passés récents pour compléter)
-    const events = all.slice(0, 6);
+    // Conserver les 10 premiers (futurs prioritaires + passés récents pour compléter)
+    const events = all.slice(0, 10);
     console.log(`[fetchRaidHelperEvents] → ${events.length} événement(s) conservé(s) (sur ${all.length})`);
+
+    // Log des champs rich (image, couleur, description) pour debug
+    for (const ev of events) {
+      console.log(`  [rich] "${ev.title}" | color=${ev.color ?? 'n/a'} | imageUrl=${ev.imageUrl ?? 'n/a'} | desc=${ev.description ? ev.description.slice(0, 60) + '…' : 'n/a'}`);
+    }
 
     const payload = {
       updatedAt:   new Date().toISOString(),
