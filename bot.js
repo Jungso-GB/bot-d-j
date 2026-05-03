@@ -52,13 +52,38 @@ app.get('/api/events', (req, res) => {
     const filePath = process.env.EVENTS_FILE_PATH
       || pathModule.join(__dirname, 'data', 'events.json');
     if (!fs.existsSync(filePath)) {
+      console.log('[/api/events] events.json introuvable — retour tableau vide');
       return res.json({ updatedAt: null, totalEvents: 0, events: [] });
     }
     const data = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(data);
+    console.log(`[/api/events] Servi : ${parsed.events?.length ?? 0} événement(s), updatedAt=${parsed.updatedAt}`);
     res.setHeader('Content-Type', 'application/json');
     res.send(data);
-  } catch {
+  } catch (err) {
+    console.error('[/api/events] Erreur :', err.message);
     res.status(500).json({ error: 'Impossible de lire events.json' });
+  }
+});
+
+// Endpoint de rechargement forcé des événements (sans attendre les 24h)
+app.get('/api/events/refresh', async (req, res) => {
+  console.log('[/api/events/refresh] Rechargement forcé demandé');
+  try {
+    const fetchFn  = require('./Helpers/fetchRaidHelperEvents');
+    const settings = require('./settings');
+    await fetchFn(settings);
+    const filePath = settings.eventsFilePath;
+    if (!fs.existsSync(filePath)) {
+      return res.json({ ok: true, message: 'Fetch terminé mais events.json vide', events: [] });
+    }
+    const data   = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const count  = data.events?.length ?? 0;
+    console.log(`[/api/events/refresh] ✅ ${count} événement(s) chargé(s)`);
+    res.json({ ok: true, message: `${count} événement(s) chargé(s)`, ...data });
+  } catch (err) {
+    console.error('[/api/events/refresh] Erreur :', err.message);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
