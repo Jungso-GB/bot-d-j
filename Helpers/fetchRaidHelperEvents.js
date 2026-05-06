@@ -4,8 +4,9 @@ const fs   = require('fs');
 const path = require('path');
 
 /**
- * Récupère les événements à venir depuis l'API Raid Helper v4 et les sauvegarde
- * dans events.json (chemin défini dans settings.eventsFilePath).
+ * Récupère les événements depuis l'API Raid Helper v4, les fusionne avec
+ * les événements déjà sauvegardés (pour garder l'historique même après
+ * suppression sur Discord), et sauvegarde les 10 plus récents dans events.json.
  *
  * Appelé une fois par jour depuis bot.js.
  *
@@ -23,8 +24,23 @@ async function fetchRaidHelperEvents(settings) {
     return;
   }
 
+  // ── Charger les events déjà sauvegardés ──────────────────────────────
+  let savedEvents = [];
+  if (fs.existsSync(eventsFilePath)) {
+    try {
+      const existing = JSON.parse(fs.readFileSync(eventsFilePath, 'utf8'));
+      savedEvents = Array.isArray(existing.events) ? existing.events : [];
+      console.log(`[fetchRaidHelperEvents] ${savedEvents.length} événement(s) déjà en cache`);
+    } catch (err) {
+      console.warn('[fetchRaidHelperEvents] Lecture cache échouée :', err.message);
+    }
+  }
+
+  // ── Appel API Raid Helper ─────────────────────────────────────────────
   const url = `https://raid-helper.xyz/api/v4/servers/${raidHelperServerId}/events`;
   console.log(`[fetchRaidHelperEvents] Appel API : ${url}`);
+
+  let apiEvents = [];
 
   try {
     const res = await fetch(url, {
@@ -39,58 +55,54 @@ async function fetchRaidHelperEvents(settings) {
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       console.error(`[fetchRaidHelperEvents] Erreur HTTP ${res.status} — ${body}`);
-      return;
-    }
-
-    const data = await res.json();
-    console.log(`[fetchRaidHelperEvents] Réponse brute : eventCountOverall=${data.eventCountOverall}, postedEvents=${data.postedEvents?.length ?? 0}`);
-
-    const now  = Math.floor(Date.now() / 1000);
-
-    // Log chaque événement reçu pour debug
-    if (data.postedEvents?.length) {
-      console.log('[fetchRaidHelperEvents] Événements reçus :');
-      for (const ev of data.postedEvents) {
-        const dateStr = ev.startTime ? new Date(ev.startTime * 1000).toLocaleString('fr-FR') : 'sans date';
-        const futur   = (ev.startTime ?? 0) >= now ? '📅 futur' : '📁 passé';
-        console.log(`  ${futur} | id=${ev.id} | title="${ev.title}" | date=${dateStr}`);
-      }
+      // On continue avec les events en cache uniquement
     } else {
-      console.log('[fetchRaidHelperEvents] ⚠️  Aucun événement retourné par l\'API');
+      const data = await res.json();
+      apiEvents = data.postedEvents || [];
+      console.log(`[fetchRaidHelperEvents] API → eventCountOverall=${data.eventCountOverall}, postedEvents=${apiEvents.length}`);
+
+      // Log détaillé de chaque event reçu
+      const now = Math.floor(Date.now() / 1000);
+      for (const ev of apiEvents) {
+        const dateStr = ev.startTime ? new Date(ev.startTime * 1000).toLocaleString('fr-FR') : 'sans date';
+        const statut  = (ev.startTime ?? 0) >= now ? '📅 futur' : '📁 passé';
+        console.log(`  ${statut} | id=${ev.id} | title="${ev.title}" | date=${dateStr}`);
+        console.log(`  [rich] color=${ev.color ?? 'n/a'} | imageUrl=${ev.imageUrl ?? 'n/a'} | desc=${ev.description ? ev.description.slice(0, 60) + '…' : 'n/a'}`);
+      }
     }
-
-    // Trier par date : futurs d'abord (les plus proches), puis passés (les plus récents)
-    const all = (data.postedEvents || []).sort((a, b) => {
-      const aFut = (a.startTime ?? 0) >= now;
-      const bFut = (b.startTime ?? 0) >= now;
-      if (aFut && bFut) return (a.startTime ?? 0) - (b.startTime ?? 0);  // futurs : croissant
-      if (!aFut && !bFut) return (b.startTime ?? 0) - (a.startTime ?? 0); // passés : décroissant
-      return aFut ? -1 : 1; // futurs avant passés
-    });
-
-    // Conserver les 10 premiers (futurs prioritaires + passés récents pour compléter)
-    const events = all.slice(0, 10);
-    console.log(`[fetchRaidHelperEvents] → ${events.length} événement(s) conservé(s) (sur ${all.length})`);
-
-    // Log des champs rich (image, couleur, description) pour debug
-    for (const ev of events) {
-      console.log(`  [rich] "${ev.title}" | color=${ev.color ?? 'n/a'} | imageUrl=${ev.imageUrl ?? 'n/a'} | desc=${ev.description ? ev.description.slice(0, 60) + '…' : 'n/a'}`);
-    }
-
-    const payload = {
-      updatedAt:   new Date().toISOString(),
-      totalEvents: data.eventCountOverall ?? events.length,
-      events,
-    };
-
-    const dir = path.dirname(eventsFilePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(eventsFilePath, JSON.stringify(payload, null, 2), 'utf8');
-
-    console.log(`[fetchRaidHelperEvents] ✅ events.json sauvegardé (${events.length} événement(s))`);
   } catch (err) {
-    console.error('[fetchRaidHelperEvents] Erreur :', err.message);
+    console.error('[fetchRaidHelperEvents] Erreur réseau :', err.message);
+    // On continue avec les events en cache uniquement
   }
+
+  // ── Fusion : API en priorité, cache pour compléter ────────────────────
+  // Les events de l'API écrasent ceux du cache si même ID (mise à jour)
+  const apiIds  = new Set(apiEvents.map(e => String(e.id)));
+  const merged  = [
+    ...apiEvents,
+    ...savedEvents.filter(e => !apiIds.has(String(e.id))),
+  ];
+
+  // Trier par startTime décroissant (plus récent/futur en premier)
+  merged.sort((a, b) => (b.startTime ?? 0) - (a.startTime ?? 0));
+
+  // Garder les 10 plus récents
+  const events = merged.slice(0, 10);
+
+  console.log(`[fetchRaidHelperEvents] Fusion → ${merged.length} unique(s), conservé ${events.length}/10`);
+
+  // ── Sauvegarde ────────────────────────────────────────────────────────
+  const payload = {
+    updatedAt:   new Date().toISOString(),
+    totalEvents: events.length,
+    events,
+  };
+
+  const dir = path.dirname(eventsFilePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(eventsFilePath, JSON.stringify(payload, null, 2), 'utf8');
+
+  console.log(`[fetchRaidHelperEvents] ✅ events.json sauvegardé (${events.length} événement(s))`);
 }
 
 module.exports = fetchRaidHelperEvents;
