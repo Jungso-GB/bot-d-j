@@ -30,6 +30,9 @@
  *   { type: 'reputation' }        la faction la plus proche de son palier suivant
  *   { type: 'collection', quoi: 'montures' | 'mascottes' | 'jouets' }
  *   { type: 'mplusDonjon' }       le donjon de la saison le plus en retard
+ *   { type: 'hautFaitQuantite' }  un haut fait à compteur (« amasser 100 000 po »)
+ *   { type: 'ilvl' }              monter l'équipement jusqu'au palier suivant ;
+ *                                 en groupe, vise le membre le moins équipé
  *
  * Catégories racines Blizzard :
  *   96 Quêtes · 97 Exploration · 81 Tours de force · 201 Réputation · 95 PvP
@@ -37,9 +40,10 @@
  *   15076 Guilde · 15117 Combats de mascottes · 15234 Héritage
  *   15246 Collections · 15301 Contenu d'extension · 15522 Gouffres · 15606 Logis
  *
- * Le champ est facultatif. Une activité sans `objectif` — celles qu'on fait
- * pour le plaisir, comme l'atelier tenue — s'affiche telle quelle, sans bloc
- * d'objectif : toutes les soirées n'ont pas à être productives.
+ * Le champ est techniquement facultatif — une activité sans `objectif` s'affiche
+ * telle quelle — mais les 84 en portent un. Une activité qui répond « débrouille-
+ * toi » n'a pas sa place ici : c'est précisément ce que /que-faire est censé
+ * éviter.
  *
  * Le résolveur vit dans Helpers/objectifs.js, la vérification différée dans
  * Helpers/objectifsSuivi.js.
@@ -165,6 +169,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-atelier-mog',
+        objectif: { type: 'hautFaitCriteres', categories: [15246] },
         titre: 'Atelier tenue',
         resume: 'Zéro farm : on ouvre la garde-robe et on compose une vraie tenue pour chacun de ses persos, arme comprise.',
         duree: '1 h',
@@ -173,6 +178,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-grand-rangement',
+        objectif: { type: 'hautFaitCriteres', categories: [15246] },
         titre: 'Le grand rangement',
         resume: 'Sacs, banque, banque de guilde, hôtel des ventes : on trie, on vend, on jette. La corvée qu\'on repousse depuis six mois.',
         duree: '1 h',
@@ -181,6 +187,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-grand-coffre',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Remplir le Grand Coffre',
         resume: 'Une soirée entièrement dédiée à débloquer un maximum de choix au coffre hebdomadaire, par le chemin le plus court.',
         duree: '1 à 2 h',
@@ -198,6 +205,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-farm-or',
+        objectif: { type: 'hautFaitQuantite' },
         titre: 'Une heure de farm d\'or',
         resume: 'Pas d\'objectif de jeu, juste de la rentabilité : récolte, revente, vieux raids vidés pour le butin gris.',
         duree: '1 h',
@@ -215,6 +223,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-essayer-une-spe',
+        objectif: { type: 'hautFaitCriteres', categories: [92] },
         titre: 'Essayer une spécialisation jamais jouée',
         resume: 'On bascule sur la spé qu\'on n\'a jamais touchée, on lit le guide, et on va la roder en Expédition ou sur des rares.',
         duree: '1 à 2 h',
@@ -301,6 +310,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-remonter-ilvl',
+        objectif: { type: 'ilvl' },
         titre: 'Remise à niveau de l\'équipement',
         resume: 'Objectif chiffré : gagner un palier d\'ilvl complet via les crafts, les Expéditions et les améliorations, sans dépendre de personne.',
         duree: '1 semaine',
@@ -327,6 +337,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-objectif-or',
+        objectif: { type: 'hautFaitQuantite' },
         titre: 'Objectif or',
         resume: 'Une somme à atteindre, fixée à l\'avance, par les moyens qu\'on veut : hôtel des ventes, crafts, farm, revente.',
         duree: '4 à 7 jours',
@@ -335,6 +346,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-preparer-la-saison',
+        objectif: { type: 'hautFaitCriteres', categories: [15301] },
         titre: 'Préparer la saison suivante',
         resume: 'Il reste {{joursRestants}} jours à {{saison}} : on solde ce qui va disparaître et on met de côté matériaux et or pour le redémarrage.',
         duree: '3 à 5 jours',
@@ -402,6 +414,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-une-vie-un-perso',
+        objectif: { type: 'hautFaitCriteres', categories: [92] },
         titre: 'Une vie, un personnage',
         resume: 'Un perso monté du niveau 1 au cap sans jamais mourir. Une seule mort et tout repart de zéro.',
         duree: '3 à 8 semaines',
@@ -439,6 +452,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-defi-absurde',
+        objectif: { type: 'hautFaitCriteres', categories: [81] },
         titre: 'Le défi que personne ne demande',
         resume: 'Une règle absurde tenue jusqu\'au niveau maximum : aucun équipement au-dessus du gris, aucun sort d\'attaque, aucun point de talent… À vous de choisir votre punition.',
         duree: '4 semaines et plus',
@@ -465,6 +479,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-la-fortune',
+        objectif: { type: 'hautFaitQuantite' },
         titre: 'La fortune',
         resume: 'Un objectif d\'or à sept chiffres, atteint par le commerce, le craft et la patience. Un vrai métier parallèle.',
         duree: '2 à 6 mois',
@@ -570,6 +585,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-donjon-handicap',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Donjon à handicap',
         resume: 'Un donjon avec une règle idiote décidée à l\'avance : sans soigneur, en tenue de ville, un seul sort autorisé… On mesure la casse.',
         duree: '1 h',
@@ -587,6 +603,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-porter-un-nouveau',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Soirée parrainage',
         resume: 'On emmène un nouveau membre ou un reroll dans des donjons, on explique, on équipe. Formation accélérée.',
         duree: '1 à 2 h',
@@ -613,6 +630,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-sans-guide',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Sans guide ni add-on',
         resume: '{{donjon}}, sans route préparée, sans add-on de timer, sans vidéo. On redécouvre le donjon en le jouant.',
         duree: '1 à 2 h',
@@ -621,6 +639,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-rotation-des-roles',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Tout le monde change de rôle',
         resume: 'Le tank passe DPS, le soigneur tank, et ainsi de suite. Un donjon dans cette configuration, à voir ce qu\'il en reste.',
         duree: '1 à 2 h',
@@ -679,6 +698,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-equiper-le-groupe',
+        objectif: { type: 'ilvl' },
         titre: 'Équiper tout le groupe',
         resume: 'Objectif collectif : amener les cinq membres au même palier d\'ilvl, en priorisant à chaque run celui qui est en retard.',
         duree: '1 semaine',
@@ -723,6 +743,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-coffre-du-groupe',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Le Grand Coffre pour les cinq',
         resume: 'Objectif collectif : chacun des cinq membres débloque son maximum de choix au coffre avant la réinitialisation.',
         duree: '2 à 3 soirées',
@@ -731,6 +752,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-fin-de-saison',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Le sprint de fin de saison',
         resume: 'Il reste {{joursRestants}} jours à {{saison}} : on liste ce qui va disparaître et on va le chercher pendant qu\'il est encore temps.',
         duree: '1 à 2 semaines',
@@ -739,6 +761,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-formation-tank-heal',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Former un tank et un soigneur',
         resume: 'Deux membres du groupe passent sur les rôles dont la guilde manque, et on les fait monter en donjon jusqu\'à ce qu\'ils tiennent une clé.',
         duree: '4 à 6 soirées',
@@ -806,6 +829,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-cinq-memes-classes',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Le groupe mono-classe',
         resume: 'Cinq joueurs, la même classe, et tout le contenu de groupe fait dans cette configuration absurde.',
         duree: '4 à 8 semaines',
@@ -832,6 +856,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-former-un-second-groupe',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Former le groupe suivant',
         resume: 'Le groupe expérimenté prend cinq membres moins avancés et les amène jusqu\'à être autonomes en clés. On se rend remplaçable.',
         duree: '6 à 8 semaines',

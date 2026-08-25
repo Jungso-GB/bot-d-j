@@ -497,6 +497,52 @@ async function mplusDonjon(settings, progress, opts = {}) {
   };
 }
 
+// ── Équipement ─────────────────────────────────────────────────────────
+
+// De combien on propose de monter, selon le temps qu'on y met. Les paliers
+// d'équipement montent par crans de cinq dans le jeu : viser un multiple de
+// cinq donne une cible qui ressemble à celles que les joueurs se fixent déjà.
+const GAINS_ILVL = { soiree: 3, jours: 7, defi: 15 };
+
+/**
+ * Monter le niveau d'objet équipé jusqu'à un palier rond.
+ *
+ * En groupe, c'est le maillon le plus faible qui donne la cible : c'est lui qui
+ * décide de ce que l'équipe peut tenter, et le porter profite à tout le monde.
+ */
+async function ilvl(settings, progress, opts = {}) {
+  const profils  = opts.profils?.length ? opts.profils : [progress];
+  const lisibles = profils.filter(p => p?.ilvl > 0);
+  if (!lisibles.length) return null;
+
+  const plusFaible = lisibles.sort((a, b) => a.ilvl - b.ilvl)[0];
+  const actuel = plusFaible.ilvl;
+  const gain   = GAINS_ILVL[opts.echelle] ?? GAINS_ILVL.jours;
+  const cible  = Math.ceil((actuel + gain) / 5) * 5;
+
+  const enGroupe = lisibles.length > 1;
+  const qui = enGroupe ? plusFaible.personnage.split('-')[0] : null;
+
+  return {
+    type: 'ilvl',
+    cible: enGroupe
+      ? `Monter ${qui} de ${actuel} à ${cible} d'ilvl`
+      : `Passer l'équipement de ${actuel} à ${cible}`,
+    contexte: enGroupe
+      ? `${qui} est le moins équipé du groupe avec ${actuel} d'ilvl.`
+      : `Niveau d'objet équipé aujourd'hui : ${actuel}.`,
+    progression: `ilvl ${actuel}`,
+    etapes: [`Gagner ${cible - actuel} niveaux d'objet`],
+    reste: 0,
+    recompense: '',
+    // Sans preuve, l'objectif s'affiche mais ne se prend pas : la vérification
+    // différée relit le profil de celui qui a cliqué, et ici la cible porte sur
+    // quelqu'un d'autre. Mieux vaut pas de bouton qu'un bouton qui ment.
+    preuve: enGroupe ? null : { ilvlAuMoins: cible },
+    faitsAutorises: qui ? [qui] : [],
+  };
+}
+
 // ── Groupe ─────────────────────────────────────────────────────────────
 
 /**
@@ -586,6 +632,7 @@ const RESOLVEURS = {
   reputation,
   collection,
   mplusDonjon,
+  ilvl,
 };
 
 /**
@@ -655,6 +702,13 @@ async function pourActivite(settings, activity, progress, contexte = {}) {
  */
 async function pourGroupe(settings, activity, profils, contexte = {}) {
   const meneur = profils[0];
+
+  // L'équipement ne se croise pas comme un haut fait : ce qui compte n'est pas
+  // ce qui manque au plus grand nombre, mais qui traîne derrière.
+  if (activity.objectif?.type === 'ilvl') {
+    const equipement = await ilvl(settings, meneur, { echelle: contexte.echelle, profils });
+    if (equipement) return { ...equipement, activite: activity.id };
+  }
 
   try {
     const commun = await groupe(settings, profils, {

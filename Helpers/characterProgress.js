@@ -118,7 +118,8 @@ async function chargerProgression(settings, membre) {
   const base = `/profile/wow/character/${membre.realm.toLowerCase()}` +
                `/${encodeURIComponent(membre.name.toLowerCase())}`;
 
-  const [hf, montures, mascottes, jouets, reputations, mplus, quetes] = await Promise.all([
+  const [fiche, hf, montures, mascottes, jouets, reputations, mplus, quetes] = await Promise.all([
+    volet(settings, base),
     volet(settings, `${base}/achievements`),
     volet(settings, `${base}/collections/mounts`),
     volet(settings, `${base}/collections/pets`),
@@ -161,6 +162,12 @@ async function chargerProgression(settings, membre) {
     exaltees:   reputations?.reputations ? exaltees : null,
     scoreMplus: mplus?.current_mythic_rating?.rating != null
       ? Math.round(mplus.current_mythic_rating.rating) : null,
+
+    // Le niveau d'objet réellement porté, pas la moyenne sac compris : c'est
+    // celui-là qui décide de ce que le personnage peut suivre.
+    ilvl:   fiche?.equipped_item_level ?? null,
+    classe: fiche?.character_class?.name ?? null,
+    spe:    fiche?.active_spec?.name ?? null,
 
     // Ce qui manque — sert à bâtir un objectif nominatif
     candidats,

@@ -318,8 +318,10 @@ function activityScreen(mode, section, activity, bloc, live, progress, tout, dej
     pied.push(groupe?.length > 1
       ? 'Objectif du groupe pris — je félicite quand il tombe'
       : 'Objectif pris — je te félicite quand il tombe');
-  } else if (bloc) {
+  } else if (bloc?.objectif?.preuve) {
     pied.push('Rien n\'est enregistré tant que tu ne l\'as pas pris');
+  } else if (bloc) {
+    pied.push('Objectif collectif — à suivre entre vous');
   } else {
     pied.push('Pas convaincu ? Relance le dé.');
   }
@@ -332,9 +334,11 @@ function activityScreen(mode, section, activity, bloc, live, progress, tout, dej
         .setLabel('Une autre !')
         .setEmoji('🎲')
         .setStyle(ButtonStyle.Success),
-      // Le bouton n'apparaît que s'il y a un objectif à prendre : un tirage
-      // sans cible personnalisée n'a rien à faire engager à qui que ce soit.
-      ...(bloc ? [
+      // Le bouton n'apparaît que si l'objectif est vérifiable sur celui qui
+      // clique. Un objectif de groupe qui vise le maillon faible ne l'est pas :
+      // promettre des félicitations qu'on ne pourra pas tenir serait pire que
+      // de ne rien promettre.
+      ...(bloc?.objectif?.preuve ? [
         new ButtonBuilder()
           .setCustomId(id('prendre', mode.id, section.id, activity.id, tout))
           .setLabel(pris ? 'Objectif pris' : 'Je le prends')
@@ -503,7 +507,7 @@ module.exports = {
         ? await construireObjectif(bot.settings, activity, brute, progress, equipe, live, section)
         : null;
 
-      dernier = bloc ? { bloc, activity, mode, section, live, equipe, tout } : null;
+      dernier = bloc?.objectif?.preuve ? { bloc, activity, mode, section, live, equipe, tout } : null;
 
       // Un écran sans bloc d'objectif est indiscernable d'un bot resté sur
       // l'ancienne version : on dit toujours pourquoi il manque.

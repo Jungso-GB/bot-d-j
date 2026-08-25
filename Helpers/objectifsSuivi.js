@@ -20,6 +20,7 @@
  * (achievement, monturesAuMoins…) avec deux formes propres au suivi :
  *   { reputation: 54, tierAuMoins: 5 }        palier de réputation atteint
  *   { mplusDonjon: 'Repos des rois', niveauAuMoins: 8 }
+ *   { ilvlAuMoins: 260 }                      niveau d'objet équipé atteint
  *
  * La passe quotidienne relit les profils **sans passer par le cache** : un cache
  * de six heures suffit pour un tirage, pas pour constater un exploit.
@@ -122,6 +123,9 @@ function preuveTenue(preuve, progress) {
   }
   if (preuve.mascottesAuMoins != null) {
     tests.push(progress.mascottes != null && progress.mascottes >= preuve.mascottesAuMoins);
+  }
+  if (preuve.ilvlAuMoins != null) {
+    tests.push(progress.ilvl != null && progress.ilvl >= preuve.ilvlAuMoins);
   }
   if (preuve.jouetsAuMoins != null) {
     tests.push(progress.jouets != null && progress.jouets >= preuve.jouetsAuMoins);
