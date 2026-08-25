@@ -368,6 +368,26 @@ function activityScreen(mode, section, activity, bloc, live, progress, tout, dej
   return { embeds: [embed], components: rows };
 }
 
+/**
+ * Écran d'attente, le temps de lire le profil et de faire rédiger l'objectif.
+ *
+ * Il est affiché **sans aucun bouton**, et c'est tout l'intérêt : la résolution
+ * prend quelques secondes, pendant lesquelles un joueur impatient cliquerait
+ * deux ou trois fois sur « Une autre ! ». Chaque clic lancerait un tirage
+ * concurrent, et le dernier arrivé écraserait l'affichage du précédent — sans
+ * compter les appels payés pour rien. Retirer les boutons rend la chose
+ * impossible plutôt que simplement déconseillée.
+ */
+function attenteScreen(mode, section) {
+  const embed = new EmbedBuilder()
+    .setColor(section.color)
+    .setAuthor({ name: `${mode.emoji} ${mode.label} · ${section.emoji} ${section.label}` })
+    .setTitle('⛏️ Je regarde ce que tu pourrais faire...')
+    .setDescription('Je fouille ta progression et je te forge un objectif.');
+
+  return { embeds: [embed], components: [] };
+}
+
 /** Écran d'erreur : une case du catalogue encore vide. */
 function emptyScreen(mode, section, tout) {
   const embed = new EmbedBuilder()
@@ -512,6 +532,9 @@ module.exports = {
     const ecranActivite = async (i, mode, section, excludeId, tout) => {
       const brute = pickActivity(mode.id, section.id, excludeId, { progress, inclureFaits: tout });
       if (!brute) return i.editReply(emptyScreen(mode, section, tout));
+
+      // Boutons retirés avant le travail long : plus rien à cliquer en double
+      if (progress?.ok) await i.editReply(attenteScreen(mode, section));
 
       // Relu à chaque tirage : la veille tourne en tâche de fond, on prend
       // toujours le dernier état sans avoir à redémarrer le bot.
