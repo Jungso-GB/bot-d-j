@@ -112,9 +112,16 @@ function planifierHebdo(config, tache, nom = 'tâche') {
 /** Libellé lisible d'un réglage, pour les journaux et /que-faire. */
 function libelleSchedule(config) {
   const { jours = [4], heure = 8, minute = 0, fuseau = 'Europe/Paris' } = config || {};
-  const noms = jours.map(j => JOURS[j]).join(' et ');
   const hh = String(heure).padStart(2, '0');
   const mm = String(minute).padStart(2, '0');
+
+  // Les sept jours cochés, c'est une tâche quotidienne — l'énumérer donnerait
+  // « chaque dimanche et lundi et mardi et… », que personne ne veut lire.
+  const noms = jours.length >= 7
+    ? 'jour'
+    : jours.map(j => JOURS[j]).reduce((acc, nom, i, liste) =>
+        acc + (i === 0 ? '' : i === liste.length - 1 ? ' et ' : ', ') + nom, '');
+
   return `chaque ${noms} à ${hh}h${mm} (${fuseau})`;
 }
 

@@ -138,40 +138,68 @@ async function construireObjectif(settings, activity, brute, progress, groupe, l
   return { objectif, texte };
 }
 
-/** Met en forme le bloc d'objectif dans l'embed. */
+// Limite d'un champ d'embed Discord. La dépasser fait rejeter tout le message.
+const CHAMP_MAX = 1024;
+
+/**
+ * Met en forme le bloc d'objectif dans l'embed.
+ *
+ * Le budget de caractères est serré et la prose de l'IA est de longueur
+ * imprévisible. On assemble donc par ordre de valeur décroissante en s'arrêtant
+ * avant le mur, plutôt que de tout coller et de couper au caractère près — une
+ * étape amputée en plein mot est pire que pas d'étape du tout.
+ *
+ * Les critères manquants sont réservés d'avance : ce sont les seules données
+ * vérifiées auprès de Blizzard, ce sont donc les dernières à sacrifier.
+ */
 function ajouterObjectif(embed, bloc) {
   if (!bloc) return;
 
   const { objectif, texte } = bloc;
-  const lignes = [];
 
-  if (objectif.progression) lignes.push(`*${objectif.progression}*`);
-  if (texte?.accroche)      lignes.push(texte.accroche);
-  else if (objectif.contexte) lignes.push(objectif.contexte);
+  // Quand l'IA a pris la main, elle n'a plus cité les critères manquants tels
+  // quels : on les remet en clair, ils restent l'information la plus précieuse.
+  const rappelFaits = (texte?.etapes?.length && objectif.etapes?.length && objectif.type !== 'collection')
+    ? `**Il te manque :** ${objectif.etapes.join(' · ')}` +
+      (objectif.reste ? ` *(+${objectif.reste} autres)*` : '')
+    : null;
+
+  const lignes = [];
+  let budget = CHAMP_MAX - (rappelFaits ? rappelFaits.length + 2 : 0);
+
+  const ajouter = (ligne) => {
+    const cout = ligne.length + 1;
+    if (cout > budget) return false;
+    budget -= cout;
+    lignes.push(ligne);
+    return true;
+  };
+
+  if (objectif.progression) ajouter(`*${objectif.progression}*`);
+
+  if (texte?.accroche) ajouter(texte.accroche);
+  else if (objectif.contexte) ajouter(objectif.contexte);
 
   // Les étapes rédigées par l'IA remplacent la liste brute quand elles
   // existent : elles disent comment s'y prendre, pas seulement quoi cocher.
   const etapes = texte?.etapes?.length ? texte.etapes : objectif.etapes;
   if (etapes?.length) {
-    lignes.push('');
-    lignes.push(...etapes.map((e, n) => `\`${n + 1}.\` ${e}`));
+    ajouter('');
+    // Une étape qui ne tient pas est abandonnée entière, pas rognée
+    for (const [n, e] of etapes.entries()) if (!ajouter(`\`${n + 1}.\` ${e}`)) break;
   }
 
-  // Quand l'IA a pris la main, on n'a plus cité les critères manquants :
-  // ils restent l'information la plus précieuse, on les remet en clair.
-  if (texte?.etapes?.length && objectif.etapes?.length && objectif.type !== 'collection') {
-    lignes.push('');
-    lignes.push(`**Il te manque :** ${objectif.etapes.join(' · ')}` +
-                (objectif.reste ? ` *(+${objectif.reste} autres)*` : ''));
+  if (rappelFaits) {
+    lignes.push('', rappelFaits);
   } else if (objectif.reste) {
-    lignes.push(`*(+${objectif.reste} autres non listés)*`);
+    ajouter(`*(+${objectif.reste} autres non listés)*`);
   }
 
-  if (objectif.recompense) lignes.push(`**Récompense :** ${objectif.recompense}`);
+  if (objectif.recompense) ajouter(`**Récompense :** ${objectif.recompense}`);
 
   embed.addFields({
-    name: `🎯 ${objectif.cible}`,
-    value: lignes.join('\n').slice(0, 1024),
+    name: `🎯 ${objectif.cible}`.slice(0, 256),
+    value: lignes.join('\n'),
     inline: false,
   });
 }
@@ -471,6 +499,15 @@ module.exports = {
         : null;
 
       dernier = bloc ? { bloc, activity, mode, section, live, equipe, tout } : null;
+
+      // Un écran sans bloc d'objectif est indiscernable d'un bot resté sur
+      // l'ancienne version : on dit toujours pourquoi il manque.
+      if (!bloc && brute.objectif) {
+        console.log(`[que-faire] ${brute.id} : pas d'objectif — ` +
+          (!progress?.ok ? `profil illisible (${progress?.raison})`
+           : dejaFait   ? 'activité déjà accomplie'
+           : 'aucune cible trouvée par le résolveur'));
+      }
 
       return i.editReply(
         activityScreen(mode, section, activity, bloc, live, progress, tout, dejaFait, equipe, false)

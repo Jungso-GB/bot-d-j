@@ -23,13 +23,28 @@
  * jamais une dépendance.
  */
 
-const TIMEOUT_MS = 12000;
+const TIMEOUT_MS = 20000;
 const URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+/**
+ * Budget de sortie, et pourquoi il est si large pour cinq lignes de texte.
+ *
+ * Le modèle par défaut raisonne avant d'écrire, et ces jetons de raisonnement
+ * sont facturés sur le même compteur que la réponse. Avec un plafond serré,
+ * la réflexion consomme tout et la réponse revient vide (`finish_reason:
+ * "length"`) — un échec silencieux qui ressemble à une panne d'API.
+ *
+ * On coupe donc le raisonnement, qui n'apporte rien à une reformulation de
+ * faits déjà établis : mesuré sur deepseek-v4-flash, ça descend de 12 s à 4 s
+ * et divise le coût par huit. Le plafond large reste une ceinture de sécurité
+ * pour un modèle qui raisonnerait quand même.
+ */
+const SORTIE_MAX_TOKENS = 1500;
 
 // Plafonds de sécurité sur ce qui revient : on affiche dans un embed Discord,
 // et un modèle bavard ne doit pas pouvoir faire exploser la mise en page.
-const ACCROCHE_MAX = 320;
-const ETAPE_MAX    = 160;
+const ACCROCHE_MAX = 260;
+const ETAPE_MAX    = 140;
 const ETAPES_MAX   = 4;
 
 const CONSIGNE = `Tu écris pour le bot Discord d'une guilde World of Warcraft francophone détendue.
@@ -46,6 +61,9 @@ RÈGLES ABSOLUES
    ou de la méthode, reste volontairement vague ("repère la zone sur la carte",
    "regarde du côté des quêtes de la zone") plutôt que d'inventer une précision.
    Une étape vague et juste vaut mieux qu'une étape précise et fausse.
+   Cela vaut aussi pour les points cardinaux, les mécaniques de boss, les tables
+   de butin et les noms de vendeurs : n'en cite aucun dont tu ne sois sûr. Ne
+   remplis jamais une étape avec un détail décoratif pour faire vrai.
 4. Tutoiement, ton chaleureux et direct, zéro emphase marketing, zéro emoji.
 5. Français de France.
 
@@ -55,10 +73,18 @@ FORMAT DE RÉPONSE — un objet JSON, rien d'autre, sans balises de code :
 
 Entre 2 et 4 étapes. Chaque étape tient en une ligne.`;
 
-/** Tronque proprement une chaîne trop longue. */
+/**
+ * Tronque une chaîne trop longue sur une frontière de mot.
+ * Couper au caractère près donne « une mascott… », qu'on lit deux fois.
+ */
 function borner(texte, max) {
   const t = String(texte || '').trim().replace(/\s+/g, ' ');
-  return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
+  if (t.length <= max) return t;
+
+  const coupe = t.slice(0, max - 1);
+  const espace = coupe.lastIndexOf(' ');
+  // Un mot unique plus long que la limite : là, on coupe sec, faute de mieux
+  return `${(espace > max * 0.6 ? coupe.slice(0, espace) : coupe).trimEnd()}…`;
 }
 
 /** Extrait l'objet JSON d'une réponse, même noyé dans du bavardage. */
@@ -118,7 +144,9 @@ async function rediger(settings, objectif, activity, live) {
       body: JSON.stringify({
         model,
         temperature: 0.7,
-        max_tokens: 400,
+        max_tokens: SORTIE_MAX_TOKENS,
+        // Ignoré par les modèles qui ne raisonnent pas — voir SORTIE_MAX_TOKENS
+        reasoning: { enabled: false },
         messages: [
           { role: 'system', content: CONSIGNE },
           { role: 'user', content: JSON.stringify(dossier(objectif, activity, live), null, 1) },
@@ -142,10 +170,15 @@ async function rediger(settings, objectif, activity, live) {
     return null;
   }
 
-  const texte = json?.choices?.[0]?.message?.content;
-  const objet = extraireJson(texte);
+  const choix = json?.choices?.[0];
+  const objet = extraireJson(choix?.message?.content);
   if (!objet) {
-    console.warn('[redacteur] réponse illisible, repli sur les faits bruts');
+    // On distingue les deux pannes : un budget épuisé se corrige dans le code,
+    // une réponse hors format se corrige dans la consigne. Les confondre coûte
+    // une soirée de recherche.
+    console.warn(choix?.finish_reason === 'length'
+      ? `[redacteur] réponse tronquée (${SORTIE_MAX_TOKENS} jetons épuisés), repli sur les faits bruts`
+      : '[redacteur] réponse hors format, repli sur les faits bruts');
     return null;
   }
 
