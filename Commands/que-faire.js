@@ -383,7 +383,7 @@ function attenteScreen(mode, section) {
     .setColor(section.color)
     .setAuthor({ name: `${mode.emoji} ${mode.label} · ${section.emoji} ${section.label}` })
     .setTitle('⛏️ Je regarde ce que tu pourrais faire...')
-    .setDescription('Je fouille ta progression et je te forge un objectif.');
+    .setDescription('J\'en ai pour 10 secondes !');
 
   return { embeds: [embed], components: [] };
 }
