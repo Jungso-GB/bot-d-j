@@ -28,6 +28,12 @@ module.exports = {
   // Chemin vers le fichier JSON de la veille WoW (saison, donjons M+, affixes)
   wowSeasonFilePath: process.env.WOW_SEASON_FILE_PATH || path.join(__dirname, 'data', 'wow-season.json'),
 
+  // Chemin vers l'index des hauts faits par catégorie (construit depuis l'API Blizzard)
+  hautsFaitsFilePath: process.env.HAUTS_FAITS_FILE_PATH || path.join(__dirname, 'data', 'wow-hauts-faits.json'),
+
+  // Chemin vers les objectifs personnels en cours (posés par /que-faire)
+  objectifsFilePath: process.env.OBJECTIFS_FILE_PATH || path.join(__dirname, 'data', 'objectifs.json'),
+
   // ── Veille World of Warcraft ───────────────────────────────────────
   // API Blizzard : identifiants créés sur https://develop.battle.net/access/clients
   blizzard: {
@@ -35,6 +41,32 @@ module.exports = {
     clientSecret: process.env.BLIZZARD_CLIENT_SECRET || '',
     region:       process.env.BLIZZARD_REGION        || 'eu',
     locale:       process.env.BLIZZARD_LOCALE        || 'fr_FR',
+  },
+
+  // ── Objectifs personnalisés ────────────────────────────────────────
+  // /que-faire ne se contente pas de tirer une activité : il lit le profil du
+  // joueur et en déduit une cible nominative (« il te manque Griseveille »).
+  //
+  // Les faits viennent toujours de l'API Blizzard. OpenRouter n'intervient que
+  // pour rédiger la marche à suivre autour de ces faits — il n'a jamais le droit
+  // de choisir la cible. Sans clé, le rendu bascule sur des gabarits : la
+  // fonctionnalité reste entière, elle perd juste le confort de lecture.
+  openrouter: {
+    apiKey: process.env.OPENROUTER_API_KEY || '',
+    model:  process.env.OPENROUTER_MODEL   || 'deepseek/deepseek-v4-flash',
+  },
+
+  // Canal où féliciter un membre qui vient de boucler son objectif.
+  // Laisser vide ('') pour désactiver l'annonce.
+  objectifsChannelId: process.env.OBJECTIFS_CHANNEL_ID || '1499834446642413658',
+
+  // Passe de vérification des objectifs en cours : tous les jours.
+  // Même format que veilleSchedule — jours: [0..6] = quotidien.
+  objectifsSchedule: {
+    jours:  [0, 1, 2, 3, 4, 5, 6],
+    heure:  9,
+    minute: 30,
+    fuseau: 'Europe/Paris',
   },
 
   // Première extension sondée chez Raider.io pour trouver la saison active.

@@ -18,6 +18,31 @@
  *   astuce  (optionnel) conseil pratique pour se lancer
  *
  * L'effectif n'est pas stocké par activité : il découle du mode choisi.
+ *
+ * ── Le champ `objectif` ───────────────────────────────────────────────
+ * Une activité reste volontairement large. Le champ `objectif` dit à quel
+ * endroit du profil du joueur aller chercher une cible nominative, pour
+ * transformer « Chasse aux rares d'une zone » en « il te manque Griseveille » :
+ *
+ *   { type: 'hautFaitCriteres', categories: [97] }
+ *        un haut fait entamé de ces catégories, avec ses critères manquants
+ *        nommés. `categories` omis = toutes catégories confondues.
+ *   { type: 'reputation' }        la faction la plus proche de son palier suivant
+ *   { type: 'collection', quoi: 'montures' | 'mascottes' | 'jouets' }
+ *   { type: 'mplusDonjon' }       le donjon de la saison le plus en retard
+ *
+ * Catégories racines Blizzard :
+ *   96 Quêtes · 97 Exploration · 81 Tours de force · 201 Réputation · 95 PvP
+ *   92 Personnages · 168 Donjons et raids · 169 Métiers · 155 Évènements
+ *   15076 Guilde · 15117 Combats de mascottes · 15234 Héritage
+ *   15246 Collections · 15301 Contenu d'extension · 15522 Gouffres · 15606 Logis
+ *
+ * Le champ est facultatif. Une activité sans `objectif` — celles qu'on fait
+ * pour le plaisir, comme l'atelier tenue — s'affiche telle quelle, sans bloc
+ * d'objectif : toutes les soirées n'ont pas à être productives.
+ *
+ * Le résolveur vit dans Helpers/objectifs.js, la vérification différée dans
+ * Helpers/objectifsSuivi.js.
  */
 
 const MODES = [
@@ -68,6 +93,7 @@ const ACTIVITIES = {
     soiree: [
       {
         id: 'solo-transmog-legacy',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Soirée transmogrification',
         resume: 'Retour dans les vieux raids en solo pour ramasser les sets qui manquent à la garde-robe. On y entre à un niveau où plus rien ne résiste.',
         duree: '1 à 3 h',
@@ -76,6 +102,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-expeditions',
+        objectif: { type: 'hautFaitCriteres', categories: [15522] },
         titre: 'Sprint d\'Expéditions',
         resume: 'On enchaîne les Expéditions en solo pour remplir la barre de la semaine et faire monter la clé du coffre.',
         duree: '1 à 2 h',
@@ -84,6 +111,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-tournee-montures',
+        objectif: { type: 'collection', quoi: 'montures' },
         titre: 'Tournée des montures rares',
         resume: 'La tournée classique : boss de monde, raids soloables et rares à monture. Tous les persos y passent, chacun relance les dés.',
         duree: '1 à 2 h',
@@ -92,6 +120,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-metiers',
+        objectif: { type: 'hautFaitCriteres', categories: [169] },
         titre: 'Session métiers et récolte',
         resume: 'On se concentre sur un seul métier : farm des composants, montée des points de connaissance, craft pour la guilde.',
         duree: '1 à 2 h',
@@ -100,6 +129,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-exploration-zone',
+        objectif: { type: 'hautFaitCriteres', categories: [97] },
         titre: 'Exploration d\'une zone jamais visitée',
         resume: 'On pique une zone qu\'on n\'a jamais pris le temps de faire, et on la termine : quêtes, trésors, rares, tout.',
         duree: '1 à 2 h',
@@ -108,6 +138,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-chasse-aux-rares',
+        objectif: { type: 'hautFaitCriteres', categories: [81, 15301] },
         titre: 'Chasse aux rares d\'une zone',
         resume: 'Une zone, sa liste de rares, et on les coche un par un jusqu\'au dernier.',
         duree: '1 à 2 h',
@@ -116,6 +147,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-soiree-detente',
+        objectif: { type: 'hautFaitCriteres', categories: [169, 81] },
         titre: 'Soirée pêche et détente',
         resume: 'Pêche, archéologie, cueillette : les activités qu\'on fait en écoutant autre chose, sans jamais mourir.',
         duree: '1 à 2 h',
@@ -124,6 +156,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-tour-quetes-hebdo',
+        objectif: { type: 'hautFaitCriteres', categories: [96] },
         titre: 'Le tour des quêtes hebdomadaires',
         resume: 'Toutes les quêtes mondiales et hebdomadaires du perso principal, bouclées en une passe propre.',
         duree: '1 à 2 h',
@@ -156,6 +189,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-boss-de-monde',
+        objectif: { type: 'hautFaitCriteres', categories: [15301] },
         titre: 'Le boss de monde de la semaine',
         resume: 'Le boss hebdomadaire de {{extension}}, fait sur le principal puis sur tous les rerolls qui peuvent le tenter.',
         duree: '30 min à 1 h',
@@ -172,6 +206,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-hauts-faits-en-attente',
+        objectif: { type: 'hautFaitCriteres' },
         titre: 'Le ménage dans les hauts faits',
         resume: 'On ouvre l\'onglet des hauts faits incomplets et on termine tous ceux qui sont à une ou deux cases de la fin.',
         duree: '1 à 2 h',
@@ -192,6 +227,7 @@ const ACTIVITIES = {
     jours: [
       {
         id: 'solo-monter-un-reroll',
+        objectif: { type: 'hautFaitCriteres', categories: [92] },
         titre: 'Monter un reroll au niveau maximum',
         resume: 'Un nouveau perso, une classe jamais jouée, du niveau 1 jusqu\'au cap. On découvre un autre rôle pour le roster.',
         duree: '2 à 4 soirées',
@@ -200,6 +236,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-race-alliee',
+        objectif: { type: 'hautFaitCriteres', categories: [92] },
         titre: 'Débloquer une race alliée',
         resume: 'Réputation, campagne d\'extension et quête de déblocage : on vise une race alliée précise et son armure d\'apparat.',
         duree: '3 à 5 jours',
@@ -208,6 +245,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-campagne-oubliee',
+        objectif: { type: 'hautFaitCriteres', categories: [96] },
         titre: 'Terminer une campagne d\'extension oubliée',
         resume: 'La campagne qu\'on a abandonnée au milieu : on la reprend du début et on va jusqu\'au générique de fin.',
         duree: '3 à 4 soirées',
@@ -216,6 +254,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-reputation-exaltee',
+        objectif: { type: 'reputation' },
         fait: { achievement: 521 },
         titre: 'Exalté avec une faction',
         resume: 'On choisit une faction — ancienne ou actuelle — et on la pousse jusqu\'au dernier palier pour la récompense au bout.',
@@ -225,6 +264,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-metier-zero-max',
+        objectif: { type: 'hautFaitCriteres', categories: [169] },
         titre: 'Un métier de zéro au maximum',
         resume: 'On repart d\'un métier vierge et on le monte à fond, spécialisations comprises, pour couvrir un besoin de la guilde.',
         duree: '3 à 5 jours',
@@ -233,6 +273,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-tour-des-mages',
+        objectif: { type: 'hautFaitCriteres', categories: [96] },
         titre: 'La Tour des Mages',
         resume: 'Le défi solo emblématique, à réussir avec une spécialisation choisie. Ça demande de la préparation et quelques essais.',
         duree: '2 à 4 soirées',
@@ -241,6 +282,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-quete-monture-longue',
+        objectif: { type: 'collection', quoi: 'montures' },
         titre: 'Une monture à quête longue',
         resume: 'Une des montures qui demandent une chaîne de quêtes ou de collecte étalée sur plusieurs jours. On en choisit une et on la termine.',
         duree: '3 à 6 jours',
@@ -249,6 +291,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-mascottes-campagne',
+        objectif: { type: 'collection', quoi: 'mascottes' },
         fait: { achievement: 5877 },
         titre: 'Campagne de combats de mascottes',
         resume: 'Monter une équipe de mascottes solide et battre les maîtres apprivoiseurs d\'une extension entière.',
@@ -266,6 +309,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-hauts-faits-exploration',
+        objectif: { type: 'hautFaitCriteres', categories: [97] },
         titre: 'Hauts faits d\'exploration d\'une extension',
         resume: 'Trésors, points d\'exploration, secrets et énigmes d\'une extension complète, méthodiquement.',
         duree: '4 à 6 jours',
@@ -274,6 +318,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-decrocher-un-titre',
+        objectif: { type: 'hautFaitCriteres', categories: [81] },
         titre: 'Décrocher un titre',
         resume: 'On choisit un titre qu\'on aimerait porter, on remonte à sa source, et on fait ce qu\'il faut pour l\'obtenir.',
         duree: '2 à 5 jours',
@@ -298,6 +343,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-collection-tabards',
+        objectif: { type: 'hautFaitCriteres', categories: [15246] },
         titre: 'La collection oubliée',
         resume: 'Tabards, chemises, sacs à dos, armes d\'apparat : les collections que personne ne regarde, complétées d\'un coup.',
         duree: '3 à 5 jours',
@@ -306,6 +352,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-hauts-faits-pvp',
+        objectif: { type: 'hautFaitCriteres', categories: [95] },
         titre: 'Les hauts faits PvP oubliés',
         resume: 'Les vieux hauts faits de champs de bataille, ceux qui demandent de gagner un objectif précis plutôt que le match.',
         duree: '4 à 6 jours',
@@ -318,6 +365,7 @@ const ACTIVITIES = {
     defi: [
       {
         id: 'solo-maitre-du-savoir',
+        objectif: { type: 'hautFaitCriteres', categories: [96] },
         titre: 'Maître du savoir d\'une extension',
         resume: 'Toutes les quêtes de toutes les zones d\'une extension complète. Un marathon de lore, zone après zone.',
         duree: '3 à 6 semaines',
@@ -326,6 +374,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-monture-ultra-rare',
+        objectif: { type: 'collection', quoi: 'montures' },
         titre: 'Farm d\'une monture ultra-rare',
         resume: 'On choisit une monture au taux de drop dérisoire et on y retourne chaque semaine, sur tous ses persos, jusqu\'à ce qu\'elle tombe.',
         duree: 'Indéterminée (des mois, parfois)',
@@ -334,6 +383,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-cap-montures',
+        objectif: { type: 'collection', quoi: 'montures' },
         fait: { monturesAuMoins: 400 },
         titre: 'Franchir un cap de collection de montures',
         resume: 'Un palier de collection à atteindre (100, 250, 400…), en piochant partout : réputations, raids, métiers, PvP.',
@@ -343,6 +393,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-une-classe-de-chaque',
+        objectif: { type: 'hautFaitCriteres', categories: [92] },
         titre: 'Un personnage de chaque classe',
         resume: 'Monter au niveau maximum un représentant de chaque classe du jeu. Le projet reroll ultime.',
         duree: '2 à 4 mois',
@@ -359,6 +410,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-garde-robe-complete',
+        objectif: { type: 'hautFaitCriteres', categories: [15246] },
         titre: 'Garde-robe complète d\'une extension',
         resume: 'Toutes les apparences d\'une extension : raids, donjons, PvP, quêtes, métiers. On coche l\'onglet jusqu\'au bout.',
         duree: '4 à 8 semaines',
@@ -367,6 +419,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-exalte-extension',
+        objectif: { type: 'reputation' },
         fait: { achievement: 518 },
         titre: 'Exalté avec toutes les factions d\'une extension',
         resume: 'Chaque faction de l\'extension choisie, jusqu\'au dernier palier de réputation. Long, mais très rentable.',
@@ -376,6 +429,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-collection-jouets',
+        objectif: { type: 'collection', quoi: 'jouets' },
         fait: { jouetsAuMoins: 400, mascottesAuMoins: 1000 },
         titre: 'Chasse aux jouets et aux mascottes',
         resume: 'Deux collections qu\'on néglige toujours : on liste ce qui manque et on va tout chercher, jusqu\'au palier suivant.',
@@ -393,6 +447,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-tous-les-raids-retro',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Vider tous les raids d\'avant',
         resume: 'Extension par extension, chaque raid ancien nettoyé en solo jusqu\'au dernier boss. Vingt ans de contenu, méthodiquement.',
         duree: '2 à 3 mois',
@@ -401,6 +456,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-tous-les-metiers',
+        objectif: { type: 'hautFaitCriteres', categories: [169] },
         titre: 'Couvrir tous les métiers',
         resume: 'Répartir les métiers du jeu sur ses personnages jusqu\'à ce que la guilde n\'ait plus jamais besoin de chercher un crafteur.',
         duree: '2 à 3 mois',
@@ -417,6 +473,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-tous-les-titres-extension',
+        objectif: { type: 'hautFaitCriteres', categories: [81] },
         titre: 'Tous les titres d\'une extension',
         resume: 'Chaque titre obtenable dans une extension donnée : exploration, réputations, hauts faits, PvP. Aucun laissé de côté.',
         duree: '6 à 10 semaines',
@@ -425,6 +482,7 @@ const ACTIVITIES = {
       },
       {
         id: 'solo-hauts-faits-legendaires',
+        objectif: { type: 'hautFaitCriteres', categories: [81, 168] },
         titre: 'Les hauts faits que plus personne ne fait',
         resume: 'Les hauts faits d\'événements saisonniers et de contenu abandonné, ceux qui demandent d\'attendre la bonne période de l\'année.',
         duree: 'Plusieurs mois, par intermittence',
@@ -440,6 +498,7 @@ const ACTIVITIES = {
     soiree: [
       {
         id: 'grp-chaine-mplus',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Chaîne de clés Mythique+',
         resume: 'On monte un groupe et on enchaîne les clés jusqu\'à ce que quelqu\'un craque. Départ sur {{donjon}}, et on finit la soirée avec une clé plus haute qu\'au début.',
         duree: '2 à 3 h',
@@ -448,6 +507,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-tour-mythique-zero',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Le tour des Mythique 0',
         resume: 'On enchaîne {{tousLesDonjons}} de {{saison}} en Mythique 0, à la suite, sans pression de chrono.',
         duree: '2 à 3 h',
@@ -456,6 +516,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-donjon-du-soir',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Le donjon du soir',
         resume: 'Un seul donjon, {{donjon}}, monté palier par palier jusqu\'à ce que le groupe cale. Chrono : {{chrono}}.',
         duree: '1 à 2 h',
@@ -464,6 +525,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-marche-du-temps',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Donjons Marche du Temps',
         resume: 'Quand l\'événement est actif : on enchaîne les donjons rétro pour la nostalgie et la caisse de fin de quête.',
         duree: '1 à 2 h',
@@ -472,6 +534,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-raid-legacy-transmog',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Raid rétro à cinq',
         resume: 'Un vieux raid nettoyé à cinq pour le transmog et les montures. Tout le monde repart avec quelque chose.',
         duree: '1 à 2 h',
@@ -480,6 +543,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-course-hauts-faits',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Course aux hauts faits de donjon',
         resume: 'On choisit un méta-haut fait de donjons et on le boucle en une soirée à cinq.',
         duree: '2 à 3 h',
@@ -488,6 +552,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-expeditions-equipe',
+        objectif: { type: 'hautFaitCriteres', categories: [15522] },
         titre: 'Expéditions en équipe',
         resume: 'Les Expéditions poussées à haut niveau, à cinq : plus dur, plus rapide, et le coffre monte pour tout le monde.',
         duree: '1 à 2 h',
@@ -496,6 +561,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-pvp',
+        objectif: { type: 'hautFaitCriteres', categories: [95] },
         titre: 'Soirée PvP en groupe',
         resume: 'Champs de bataille en groupe complet, ou arènes entre membres. Le but : gagner plus de matchs qu\'on n\'en perd.',
         duree: '1 à 3 h',
@@ -512,6 +578,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-speedrun',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Chrono en main',
         resume: 'Le même donjon refait en boucle, {{donjon}}, montre en main. Chrono : {{chrono}}. À chaque passage on rogne quelques secondes.',
         duree: '1 à 2 h',
@@ -528,6 +595,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-semaine-des-affixes',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Composer avec les affixes',
         resume: 'Cette semaine c\'est {{affixes}}. On adapte la composition et la route en conséquence, au lieu de subir.',
         duree: '2 à 3 h',
@@ -536,6 +604,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-casser-son-record',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Casser son record',
         resume: 'Un seul but : valider une clé d\'un palier au-dessus de tout ce que le groupe a fait jusqu\'ici. On tente jusqu\'à ce que ça passe.',
         duree: '2 à 3 h',
@@ -560,6 +629,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-double-donjon',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Le duel de donjons',
         resume: '{{donjon}} puis {{donjon2}}, le même palier, chronomètre en main. On compare, et le perdant paie la tournée de consommables.',
         duree: '1 à 2 h',
@@ -572,6 +642,7 @@ const ACTIVITIES = {
     jours: [
       {
         id: 'grp-palier-score-mplus',
+        objectif: { type: 'mplusDonjon' },
         fait: { scoreMplusAuMoins: 2000 },
         titre: 'Franchir un palier de score M+',
         resume: 'On se fixe un score cible et on enchaîne les clés jusqu\'à l\'atteindre, en montant progressivement les paliers.',
@@ -581,6 +652,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-toutes-les-cles-en-temps',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Toute la rotation dans le temps',
         resume: 'Chacun des donjons de {{saison}} validé dans le chrono au même palier. Aucun laissé de côté, même {{donjon}} que la moitié du groupe déteste.',
         duree: '3 à 5 soirées',
@@ -589,6 +661,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-gloire-donjons',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Gloire des donjons d\'une extension',
         resume: 'Le méta-haut fait de donjons d\'une extension : chaque boss avec sa condition spéciale, jusqu\'au dernier.',
         duree: '2 à 4 soirées',
@@ -597,6 +670,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-equipe-de-rerolls',
+        objectif: { type: 'hautFaitCriteres', categories: [92] },
         titre: 'L\'équipe de rerolls',
         resume: 'Cinq membres créent un perso neuf le même soir et ne les jouent qu\'ensemble, du premier donjon jusqu\'au cap.',
         duree: '4 à 6 soirées',
@@ -613,6 +687,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-tour-extension-complete',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Tous les donjons d\'une extension',
         resume: 'On prend une extension et on refait l\'intégralité de ses donjons dans l\'ordre, du premier au dernier.',
         duree: '3 à 4 soirées',
@@ -621,6 +696,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-farm-montures-donjons',
+        objectif: { type: 'collection', quoi: 'montures' },
         titre: 'Farm des montures de donjons',
         resume: 'La liste des montures qui tombent en donjon, et une passe hebdomadaire à cinq sur chacune d\'entre elles.',
         duree: '1 à 2 semaines',
@@ -629,6 +705,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-marche-du-temps-complet',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Marche du temps intégrale',
         resume: 'Pendant l\'événement : tous les donjons de la rotation, plus la quête hebdomadaire, pour les cinq membres du groupe.',
         duree: '2 à 3 soirées',
@@ -637,6 +714,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-la-cle-de-chacun',
+        objectif: { type: 'mplusDonjon' },
         titre: 'La clé de chacun',
         resume: 'Cinq membres, cinq clés à monter. On tourne jusqu\'à ce que tout le monde ait fait progresser la sienne, pas seulement le porteur du jour.',
         duree: '3 à 4 soirées',
@@ -669,6 +747,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-hauts-faits-saison',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Les hauts faits de la rotation',
         resume: 'Chaque donjon de {{saison}} a ses hauts faits de boss, ceux qu\'on ne décroche jamais en jouant normalement. On les coche un par un.',
         duree: '3 à 5 soirées',
@@ -681,6 +760,7 @@ const ACTIVITIES = {
     defi: [
       {
         id: 'grp-gloire-extension-complete',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Gloire d\'une extension entière',
         resume: 'Tous les méta-hauts faits de donjons d\'une extension, du premier au dernier, avec le même groupe.',
         duree: '4 à 8 semaines',
@@ -689,6 +769,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-groupe-fixe-saison',
+        objectif: { type: 'mplusDonjon' },
         titre: 'Le groupe fixe de la saison',
         resume: 'Cinq joueurs, deux soirées par semaine, jusqu\'au bout de {{saison}}. On monte ensemble et on ne change personne en route.',
         duree: 'Il reste {{joursRestants}} jours de saison',
@@ -697,6 +778,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-pousser-la-cle-haut',
+        objectif: { type: 'mplusDonjon' },
         fait: { scoreMplusAuMoins: 2500 },
         titre: 'Pousser la clé le plus haut possible',
         resume: 'Un objectif de palier ambitieux, atteint donjon par donjon, avec analyse des échecs entre les sessions.',
@@ -706,6 +788,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-tous-les-donjons-du-jeu',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Tous les donjons du jeu',
         resume: 'Le marathon total : chaque donjon existant, toutes extensions confondues, coché un par un avec le même groupe.',
         duree: '2 à 3 mois',
@@ -714,6 +797,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-toutes-montures-donjons',
+        objectif: { type: 'collection', quoi: 'montures' },
         titre: 'Toutes les montures de donjon',
         resume: 'La liste intégrale des montures droppables à cinq, farmée chaque semaine jusqu\'à ce que chacun ait la sienne.',
         duree: '2 mois et plus',
@@ -730,6 +814,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-projet-guilde',
+        objectif: { type: 'hautFaitCriteres', categories: [15076] },
         titre: 'Projet de guilde',
         resume: 'Un objectif que plusieurs groupes de cinq portent en parallèle : équiper tout le monde, boucler une extension, ou monter un événement de guilde de A à Z.',
         duree: '4 à 8 semaines',
@@ -738,6 +823,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-record-de-guilde',
+        objectif: { type: 'hautFaitCriteres', categories: [15076] },
         titre: 'Le record de la guilde',
         resume: 'Aller chercher la clé la plus haute jamais validée par un groupe de Donjons & Jambons, et inscrire les cinq noms au tableau.',
         duree: '6 à 10 semaines',
@@ -754,6 +840,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-marathon-extension',
+        objectif: { type: 'hautFaitCriteres', categories: [168] },
         titre: 'Le marathon d\'une extension',
         resume: 'Une extension ancienne prise en entier : tous ses donjons, tous ses hauts faits, toutes ses montures à cinq, jusqu\'à épuisement du contenu.',
         duree: '2 mois',
@@ -762,6 +849,7 @@ const ACTIVITIES = {
       },
       {
         id: 'grp-toutes-les-cles-au-plafond',
+        objectif: { type: 'mplusDonjon' },
         titre: 'La rotation entière au plafond',
         resume: 'Non plus valider {{tousLesDonjons}} dans le temps, mais les valider tous au palier le plus haut que le groupe sache tenir.',
         duree: '8 semaines et plus',

@@ -161,6 +161,7 @@ const bot = new Discord.Client({
   intents: new Discord.IntentsBitField([
     Discord.GatewayIntentBits.Guilds,
     Discord.GatewayIntentBits.GuildMessageReactions, // pour les réactions rôles/métiers
+    Discord.GatewayIntentBits.GuildVoiceStates,      // pour /que-faire : qui joue ensemble ce soir
   ]),
   // Partials nécessaires pour recevoir les réactions sur des messages non-cachés
   partials: [
@@ -182,6 +183,8 @@ const { syncReactions, handleReactionChange } = require('./Helpers/syncReactions
 const { syncRanks }          = require('./Helpers/syncRanks');
 const fetchRaidHelperEvents  = require('./Helpers/fetchRaidHelperEvents');
 const fetchWowSeason         = require('./Helpers/fetchWowSeason');
+const hautsFaitsIndex        = require('./Helpers/hautsFaitsIndex');
+const objectifsSuivi         = require('./Helpers/objectifsSuivi');
 const { planifierHebdo, libelleSchedule } = require('./Helpers/scheduler');
 
 /**
@@ -212,6 +215,25 @@ async function veilleWow() {
   ).catch(err => console.warn('[wow-season] Annonce impossible :', err.message));
 }
 
+/**
+ * Veille complète : la saison, puis le référentiel des hauts faits.
+ *
+ * L'index des hauts faits est le socle des objectifs personnalisés de
+ * /que-faire. Il ne bouge qu'aux patchs, mais il coûte ~170 appels à
+ * construire : on le reconstruit donc au même rythme que la veille, et jamais
+ * à la demande. Son échec ne doit rien empêcher — sans lui, les objectifs
+ * cessent simplement d'être filtrés par thème.
+ */
+async function veilleComplete() {
+  await veilleWow();
+  try {
+    hautsFaitsIndex.vider();
+    await hautsFaitsIndex.construire(settings);
+  } catch (err) {
+    console.warn('[hauts-faits] reconstruction impossible :', err.message);
+  }
+}
+
 loadCommands(bot);
 
 bot.on('ready', async () => {
@@ -236,8 +258,15 @@ bot.on('ready', async () => {
   // Veille WoW : une passe au démarrage (le bot peut avoir été éteint au moment
   // du créneau), puis à jour et heure fixes — voir settings.veilleSchedule.
   veilleWow();
-  planifierHebdo(settings.veilleSchedule, veilleWow, 'veille WoW');
+  planifierHebdo(settings.veilleSchedule, veilleComplete, 'veille WoW');
   console.log(`🗓️  Veille WoW planifiée ${libelleSchedule(settings.veilleSchedule)}`);
+
+  // Référentiel des hauts faits : construit seulement s'il manque, pour qu'un
+  // redémarrage ne repaie pas les 170 appels de catégories.
+  hautsFaitsIndex.assurer(settings);
+
+  // Objectifs personnels : passe quotidienne qui félicite ceux qui ont fini
+  objectifsSuivi.planifier(bot);
 
   // Synchronisation initiale des rôles et métiers depuis les réactions Discord
   await syncReactions(bot);
