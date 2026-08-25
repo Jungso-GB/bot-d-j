@@ -87,6 +87,37 @@ app.get('/api/events/refresh', async (req, res) => {
   }
 });
 
+// Endpoint pour la veille WoW (extension, saison M+, donjons, affixes)
+app.get('/api/wow-season', (req, res) => {
+  try {
+    const filePath = process.env.WOW_SEASON_FILE_PATH
+      || pathModule.join(__dirname, 'data', 'wow-season.json');
+    if (!fs.existsSync(filePath)) {
+      return res.json({ updatedAt: null, expansion: null, season: null, dungeons: [], affixes: null });
+    }
+    const data = fs.readFileSync(filePath, 'utf8');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  } catch {
+    res.status(500).json({ error: 'Impossible de lire wow-season.json' });
+  }
+});
+
+// Endpoint de rechargement forcé de la veille WoW (sans attendre les 24h)
+app.get('/api/wow-season/refresh', async (req, res) => {
+  console.log('[/api/wow-season/refresh] Rechargement forcé demandé');
+  try {
+    const fetchFn  = require('./Helpers/fetchWowSeason');
+    const settings = require('./settings');
+    const { data, changed } = await fetchFn(settings);
+    if (!data) return res.status(502).json({ ok: false, error: 'Rafraîchissement impossible' });
+    res.json({ ok: true, changed, ...data });
+  } catch (err) {
+    console.error('[/api/wow-season/refresh] Erreur :', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Endpoint pour les infos de la guilde (compte total Raider.io)
 app.get('/api/guild-info', (req, res) => {
   try {
@@ -150,6 +181,36 @@ const fetchGuildInfo         = require('./Helpers/fetchGuildInfo');
 const { syncReactions, handleReactionChange } = require('./Helpers/syncReactions');
 const { syncRanks }          = require('./Helpers/syncRanks');
 const fetchRaidHelperEvents  = require('./Helpers/fetchRaidHelperEvents');
+const fetchWowSeason         = require('./Helpers/fetchWowSeason');
+const { planifierHebdo, libelleSchedule } = require('./Helpers/scheduler');
+
+/**
+ * Rafraîchit la veille WoW et prévient sur Discord si la saison ou l'extension
+ * a changé depuis le dernier passage.
+ */
+async function veilleWow() {
+  const { data, changed, previous } = await fetchWowSeason(settings);
+  if (!changed || !data || !settings.wowSeasonChannelId) return;
+
+  const channel = bot.channels.cache.get(settings.wowSeasonChannelId);
+  if (!channel) return;
+
+  const nouvelleExtension = previous?.expansion?.id !== data.expansion?.id;
+  const donjons = data.dungeons.map(d => `• ${d.name} — ${d.timerMinutes} min`).join('\n');
+
+  channel.send(
+    [
+      nouvelleExtension
+        ? `🎉 **Nouvelle extension détectée : ${data.expansion.name} !**`
+        : `🔄 **Nouvelle saison Mythique+ : ${data.season.label}**`,
+      '',
+      `**Rotation des ${data.dungeons.length} donjons :**`,
+      donjons,
+      '',
+      `_Le catalogue de \`/que-faire\` est déjà à jour._`,
+    ].join('\n')
+  ).catch(err => console.warn('[wow-season] Annonce impossible :', err.message));
+}
 
 loadCommands(bot);
 
@@ -171,6 +232,12 @@ bot.on('ready', async () => {
   // Récupération des événements Raid Helper, puis toutes les 24h
   fetchRaidHelperEvents(settings);
   setInterval(() => fetchRaidHelperEvents(settings), 24 * 60 * 60 * 1000);
+
+  // Veille WoW : une passe au démarrage (le bot peut avoir été éteint au moment
+  // du créneau), puis à jour et heure fixes — voir settings.veilleSchedule.
+  veilleWow();
+  planifierHebdo(settings.veilleSchedule, veilleWow, 'veille WoW');
+  console.log(`🗓️  Veille WoW planifiée ${libelleSchedule(settings.veilleSchedule)}`);
 
   // Synchronisation initiale des rôles et métiers depuis les réactions Discord
   await syncReactions(bot);

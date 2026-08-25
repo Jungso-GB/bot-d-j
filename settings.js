@@ -25,6 +25,41 @@ module.exports = {
   // Chemin vers le fichier JSON des événements Raid Helper
   eventsFilePath: process.env.EVENTS_FILE_PATH || path.join(__dirname, 'data', 'events.json'),
 
+  // Chemin vers le fichier JSON de la veille WoW (saison, donjons M+, affixes)
+  wowSeasonFilePath: process.env.WOW_SEASON_FILE_PATH || path.join(__dirname, 'data', 'wow-season.json'),
+
+  // ── Veille World of Warcraft ───────────────────────────────────────
+  // API Blizzard : identifiants créés sur https://develop.battle.net/access/clients
+  blizzard: {
+    clientId:     process.env.BLIZZARD_CLIENT_ID     || '',
+    clientSecret: process.env.BLIZZARD_CLIENT_SECRET || '',
+    region:       process.env.BLIZZARD_REGION        || 'eu',
+    locale:       process.env.BLIZZARD_LOCALE        || 'fr_FR',
+  },
+
+  // Première extension sondée chez Raider.io pour trouver la saison active.
+  // Le helper sonde cet identifiant puis les 3 suivants : une nouvelle extension
+  // est donc détectée sans modification de code.
+  raiderIoExpansionIdMin: 11, // 11 = Midnight
+
+  // Canal où annoncer un changement de saison ou d'extension.
+  // Laisser vide ('') pour désactiver l'alerte.
+  wowSeasonChannelId: '1499834446642413658',
+
+  // Quand rafraîchir la veille WoW.
+  // jours : 0 = dimanche, 1 = lundi … 4 = jeudi, 6 = samedi.
+  //
+  // La réinitialisation hebdomadaire EU tombe le mercredi matin : c'est à ce
+  // moment que les affixes changent. Ajouter 3 (mercredi) à la liste évite
+  // d'afficher les affixes de la semaine précédente pendant la journée du
+  // mercredi. Un passage a lieu de toute façon à chaque démarrage du bot.
+  veilleSchedule: {
+    jours:  [3, 4],           // mercredi (réinit. EU, rotation des affixes) + jeudi
+    heure:  8,
+    minute: 0,
+    fuseau: 'Europe/Paris',
+  },
+
   // Clé API Raid Helper — variable d'env RAID_HELPER_API_KEY (prioritaire) ou fallback
   raidHelperApiKey:   process.env.RAID_HELPER_API_KEY   || 'ZFJb5zIm5ckB7V3APsuVH0FY0K3kGfXg57vwj8Rz',
   // ID serveur Discord pour Raid Helper (variable d'env ou celui du serveur)
@@ -45,6 +80,7 @@ module.exports = {
     'refresh-avatars': true,
     'import-alts': true,
     'refresh-ranks': true,
+    'que-faire': true,
   },
 
   // Rang attribué par défaut à tout nouveau membre (avant la 1ère synchro Discord)

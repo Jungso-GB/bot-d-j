@@ -1,0 +1,91 @@
+{
+  "updatedAt": "2026-08-25T09:30:13.704Z",
+  "expansion": {
+    "id": 516,
+    "name": "Midnight"
+  },
+  "season": {
+    "slug": "season-mn-2",
+    "name": "MN Season 2",
+    "shortName": "MN2",
+    "label": "Midnight — Saison 2",
+    "startsAt": "2026-08-19T04:00:00Z",
+    "endsAt": "2030-01-01T00:00:00Z",
+    "daysLeft": 1225
+  },
+  "dungeons": [
+    {
+      "challengeModeId": 588,
+      "name": "Autel des crochets",
+      "nameEn": "Altar of Fangs",
+      "shortName": "AOF",
+      "timerMinutes": 30,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_altaroffangs.jpg"
+    },
+    {
+      "challengeModeId": 586,
+      "name": "Antre de Nalorakk",
+      "nameEn": "Den of Nalorakk",
+      "shortName": "DON",
+      "timerMinutes": 32,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_proveyourworth.jpg"
+    },
+    {
+      "challengeModeId": 249,
+      "name": "Repos des rois",
+      "nameEn": "Kings' Rest",
+      "shortName": "KR",
+      "timerMinutes": 33,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/achievement_dungeon_kingsrest.jpg"
+    },
+    {
+      "challengeModeId": 587,
+      "name": "Allée du meurtre",
+      "nameEn": "Murder Row",
+      "shortName": "MR",
+      "timerMinutes": 34,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_murderrow.jpg"
+    },
+    {
+      "challengeModeId": 399,
+      "name": "Bassins de l’Essence rubis",
+      "nameEn": "Ruby Life Pools",
+      "shortName": "RLP",
+      "timerMinutes": 28,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/achievement_dungeon_lifepools.jpg"
+    },
+    {
+      "challengeModeId": 250,
+      "name": "Temple de Sephraliss",
+      "nameEn": "Temple of Sethraliss",
+      "shortName": "TOS",
+      "timerMinutes": 32,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/achievement_dungeon_templeofsethraliss.jpg"
+    },
+    {
+      "challengeModeId": 584,
+      "name": "Le val Aveuglant",
+      "nameEn": "The Blinding Vale",
+      "shortName": "BV",
+      "timerMinutes": 30,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_lightbloom.jpg"
+    },
+    {
+      "challengeModeId": 585,
+      "name": "Arène de la Cicatrice du Vide",
+      "nameEn": "Voidscar Arena",
+      "shortName": "VSA",
+      "timerMinutes": 30,
+      "icon": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_voidscararena.jpg"
+    }
+  ],
+  "affixes": {
+    "title": "Marché de Xal’atath : pulsar, Fortifié, Tyrannique, Ruse de Xal’atath",
+    "names": [
+      "Marché de Xal’atath : pulsar",
+      "Fortifié",
+      "Tyrannique",
+      "Ruse de Xal’atath"
+    ]
+  }
+}
