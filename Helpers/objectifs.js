@@ -61,6 +61,16 @@ const TIER_EXALTE = 7;
 // un objectif honnête, quel que soit le palier atteint.
 const AVANCEMENT_MINIMUM = 0.4;
 
+// Frontières entre les trois échelles de temps, en points de réputation
+// restants avant Exalté. Repères : une session de quêtes journalières rapporte
+// quelques milliers de points, d'où « quelques jours » entre 8 000 et 25 000.
+const PORTEE_JOURS = 8000;
+const PORTEE_DEFI  = 25000;
+
+// Avancement visé pour un haut fait « quelques jours » : entamé pour de bon,
+// mais il reste encore une bonne moitié du chemin.
+const CIBLE_JOURS = 0.55;
+
 // Pistes de collection : on en sonde une douzaine pour en retenir trois, le
 // tri par provenance en écartant une bonne part.
 const PISTES_SONDEES = 12;
@@ -80,19 +90,40 @@ const prochainPalier = n => PALIERS.find(p => p > n) ?? null;
 // ── Hauts faits ────────────────────────────────────────────────────────
 
 /**
+ * Comment ordonner les hauts faits candidats selon le temps qu'on veut y mettre.
+ *
+ * Un 19/20 est l'objectif d'une soirée parfait et un mauvais défi de plusieurs
+ * semaines ; un 2/50 est exactement l'inverse. Trier toujours pareil revenait à
+ * proposer le même genre de cible dans les trois sections.
+ */
+function comparateurParEchelle(echelle) {
+  const ratio = c => c.faits / c.total;
+
+  if (echelle === 'defi') {
+    // Le gros morceau : celui où il reste le plus à cocher
+    return (a, b) => b.manquants.length - a.manquants.length;
+  }
+  if (echelle === 'jours') {
+    // Bien entamé mais loin d'être fini — ni une formalité, ni un mur
+    return (a, b) => Math.abs(ratio(a) - CIBLE_JOURS) - Math.abs(ratio(b) - CIBLE_JOURS);
+  }
+  // Une soirée : le plus près du but
+  return (a, b) => ratio(b) - ratio(a);
+}
+
+/**
  * Le cheval de bataille : un haut fait entamé mais pas terminé, dont on nomme
  * les sous-critères qui manquent.
  *
- * Les candidats sont triés par avancement décroissant — un haut fait à 19/20
- * fait un bien meilleur objectif du soir qu'un 2/50. On tire ensuite dans le
- * haut du panier pour garder de la variété d'un tirage à l'autre.
+ * On tire dans le haut du panier plutôt que sur le premier, pour garder de la
+ * variété d'un tirage à l'autre.
  */
 async function hautFaitCriteres(settings, progress, opts = {}) {
   const passe = hautsFaitsIndex.filtreCategories(settings, opts.categories);
 
   const candidats = (progress.candidats || [])
     .filter(c => c.manquants?.length && passe(c.id))
-    .sort((a, b) => (b.faits / b.total) - (a.faits / a.total));
+    .sort(comparateurParEchelle(opts.echelle));
 
   if (!candidats.length) return null;
 
@@ -179,42 +210,108 @@ async function hautFaitQuantite(settings, progress, opts = {}) {
 const PALIERS_REPUTATION = ['Haï', 'Hostile', 'Inamical', 'Neutre', 'Amical', 'Honoré', 'Révéré', 'Exalté'];
 
 /**
- * La faction la plus proche de son palier suivant.
+ * Barème de l'échelle de réputation classique : combien de points tient chaque
+ * palier. Ces valeurs ne servent pas qu'à calculer — elles servent à vérifier.
  *
- * On écarte volontairement les réputations jamais entamées : proposer « monte
- * Gnomeregan à Exalté » à quelqu'un qui n'y a jamais mis les pieds n'est pas un
- * objectif, c'est une punition.
+ * Beaucoup de factions modernes n'utilisent plus cette échelle du tout : Ve'nari
+ * monte en « Crainte / Indifférence / Génie », les factions récentes en « Renom
+ * 1 à 25 ». Sur celles-là, lire le nom du palier suivant dans le tableau
+ * ci-dessus produirait une contre-vérité (« Passer Hostile chez Ve'nari » quand
+ * le jeu affiche « Crainte »).
+ *
+ * On confronte donc le `max` renvoyé par l'API au barème : s'il ne correspond
+ * pas, la faction n'est pas sur l'échelle classique et on ne la propose pas.
+ * C'est le profil du joueur qui décide, pas une liste tenue à la main.
  */
-async function reputation(settings, progress) {
+const SEUILS_CLASSIQUES = { 3: 3000, 4: 6000, 5: 12000, 6: 21000 };
+
+/** La faction suit-elle bien l'échelle classique jusqu'à Exalté ? */
+function surEchelleClassique(r) {
+  return SEUILS_CLASSIQUES[r.tier] === r.max && PALIERS_REPUTATION[r.tier] === r.palier;
+}
+
+/** Points restants avant Exalté, en cumulant les paliers non franchis. */
+function jusquAExalte(r) {
+  let total = r.max - r.valeur;
+  for (let t = r.tier + 1; t < TIER_EXALTE; t++) total += SEUILS_CLASSIQUES[t];
+  return total;
+}
+
+/**
+ * Un objectif de réputation taillé pour le temps annoncé par l'activité.
+ *
+ * Une activité « quelques jours » qui répond « il te manque 3 points » se
+ * décrédibilise instantanément. L'échelle de la section décide donc de ce qu'on
+ * vise : le palier suivant pour une soirée, Exalté pour un objectif plus long.
+ *
+ * On écarte les réputations jamais entamées : proposer « monte Gnomeregan à
+ * Exalté » à quelqu'un qui n'y a jamais mis les pieds n'est pas un objectif,
+ * c'est une punition.
+ */
+async function reputation(settings, progress, opts = {}) {
   const candidats = (progress.reputationsBrutes || [])
     .filter(r => r.tier != null && r.tier < TIER_EXALTE
-              && r.max > 0 && r.valeur > 0 && r.nom);
+              && r.max > 0 && r.valeur > 0 && r.nom
+              && surEchelleClassique(r));
 
   if (!candidats.length) return null;
 
-  // Un palier élevé fait un bien meilleur objectif — passer Exalté quand on est
-  // Révéré vaut mieux qu'un Neutre → Amical. Mais seulement si la barre est
-  // effectivement entamée : « Honoré, 40 points sur 12 000 » est un palier
-  // flatteur pour une soirée de farm déguisée en objectif.
-  const engages = candidats.filter(r => r.valeur / r.max >= AVANCEMENT_MINIMUM);
-  const vivier  = engages.length ? engages : candidats;
+  // Une soirée : le palier suivant, celui qui est à portée tout de suite.
+  if (opts.echelle === 'soiree') {
+    const engages = candidats.filter(r => r.valeur / r.max >= AVANCEMENT_MINIMUM);
+    const vivier  = (engages.length ? engages : candidats)
+      .sort((a, b) => (b.valeur / b.max) - (a.valeur / a.max));
 
-  vivier.sort((a, b) => (b.tier - a.tier) || ((b.valeur / b.max) - (a.valeur / a.max)));
+    const choix    = parmiLesMeilleurs(vivier);
+    const restant  = choix.max - choix.valeur;
+    const suivant  = PALIERS_REPUTATION[choix.tier + 1];
 
-  const choix = parmiLesMeilleurs(vivier);
-  const restant = choix.max - choix.valeur;
-  const suivant = PALIERS_REPUTATION[choix.tier + 1] || 'le palier suivant';
+    return {
+      type: 'reputation',
+      cible: `Passer ${suivant} chez ${choix.nom}`,
+      contexte: '',
+      progression: `${choix.palier} — ${choix.valeur}/${choix.max}`,
+      etapes: [`Gagner ${restant} points de réputation chez ${choix.nom}`],
+      reste: 0,
+      recompense: '',
+      preuve: { reputation: choix.id, tierAuMoins: choix.tier + 1 },
+      faitsAutorises: [choix.nom, suivant],
+    };
+  }
+
+  // Quelques jours ou davantage : c'est Exalté qu'on vise, et on choisit la
+  // faction dont le trajet correspond au temps qu'on veut y passer.
+  const [plancher, plafond] = opts.echelle === 'defi'
+    ? [PORTEE_DEFI, Infinity]
+    : [PORTEE_JOURS, PORTEE_DEFI];
+
+  const dansLaBonneFourchette = candidats.filter(r => {
+    const reste = jusquAExalte(r);
+    return reste >= plancher && reste < plafond;
+  });
+
+  // Rien dans la fourchette : on prend le trajet le plus court plutôt que de
+  // ne rien proposer, quitte à sortir un peu du temps annoncé.
+  const vivier = (dansLaBonneFourchette.length ? dansLaBonneFourchette : candidats)
+    .sort((a, b) => jusquAExalte(a) - jusquAExalte(b));
+
+  const choix  = parmiLesMeilleurs(vivier, 3);
+  const restant = jusquAExalte(choix);
+  const paliers = PALIERS_REPUTATION.slice(choix.tier + 1, TIER_EXALTE + 1);
 
   return {
     type: 'reputation',
-    cible: `Passer ${suivant} chez ${choix.nom}`,
-    contexte: '',
+    cible: `Monter ${choix.nom} jusqu'à Exalté`,
+    contexte: `Encore ${restant} points de réputation à gagner, soit ${paliers.length} palier${paliers.length > 1 ? 's' : ''}.`,
     progression: `${choix.palier} — ${choix.valeur}/${choix.max}`,
-    etapes: [`Gagner ${restant} points de réputation chez ${choix.nom}`],
+    etapes: [
+      `Finir ${choix.palier} : ${choix.max - choix.valeur} points`,
+      `Puis enchaîner ${paliers.join(', ')}`,
+    ],
     reste: 0,
     recompense: '',
-    preuve: { reputation: choix.id, tierAuMoins: choix.tier + 1 },
-    faitsAutorises: [choix.nom, suivant],
+    preuve: { reputation: choix.id, tierAuMoins: TIER_EXALTE },
+    faitsAutorises: [choix.nom, ...paliers],
   };
 }
 
@@ -290,7 +387,10 @@ async function collection(settings, progress, opts = {}) {
                  : progress.jouets;
   if (possedes == null) return null;
 
-  const cible = prochainPalier(possedes);
+  // Un défi de plusieurs semaines vise un palier plus loin que le suivant
+  const cible = opts.echelle === 'defi'
+    ? (prochainPalier(prochainPalier(possedes) ?? possedes) ?? prochainPalier(possedes))
+    : prochainPalier(possedes);
   if (!cible) return null;
 
   const label = quoi === 'montures' ? 'montures' : quoi === 'mascottes' ? 'mascottes' : 'jouets';
@@ -427,8 +527,10 @@ async function groupe(settings, profils, opts = {}) {
       ratio: membres.reduce((s, m) => s + m.candidat.faits / m.candidat.total, 0) / membres.length,
     }))
     .filter(c => c.membres.length >= 2)
-    // D'abord le nombre de concernés, puis l'avancement moyen
-    .sort((a, b) => (b.membres.length - a.membres.length) || (b.ratio - a.ratio));
+    // D'abord le nombre de concernés — c'est ce qui fait l'objectif commun —
+    // puis l'avancement, dans le sens que réclame la durée de l'activité.
+    .sort((a, b) => (b.membres.length - a.membres.length)
+                 || (opts.echelle === 'defi' ? a.ratio - b.ratio : b.ratio - a.ratio));
 
   if (!candidats.length) return null;
 
@@ -496,7 +598,9 @@ const RESOLVEURS = {
  * @param {object} settings
  * @param {object} activity   activité brute du catalogue
  * @param {object} progress   progression du joueur
- * @param {{live?: object}} [contexte]
+ * @param {{live?: object, echelle?: string}} [contexte] `echelle` est l'identifiant
+ *        de section ('soiree' | 'jours' | 'defi') : c'est lui qui règle le poids
+ *        de l'objectif sur le temps que l'activité annonce.
  * @returns {Promise<object|null>}
  */
 async function pourActivite(settings, activity, progress, contexte = {}) {
@@ -505,7 +609,7 @@ async function pourActivite(settings, activity, progress, contexte = {}) {
   const crochet = activity.objectif;
   if (!crochet) return null;
 
-  const opts = { ...crochet, live: contexte.live };
+  const opts = { ...crochet, live: contexte.live, echelle: contexte.echelle };
 
   try {
     const resolveur = RESOLVEURS[crochet.type];
@@ -514,8 +618,9 @@ async function pourActivite(settings, activity, progress, contexte = {}) {
       if (objectif) return { ...objectif, activite: activity.id };
     }
 
-    // Repli maison : un haut fait entamé, sans contrainte de catégorie
-    const secours = await hautFaitCriteres(settings, progress, {});
+    // Repli maison : un haut fait entamé, sans contrainte de catégorie mais
+    // toujours au bon format de durée
+    const secours = await hautFaitCriteres(settings, progress, { echelle: contexte.echelle });
     return secours ? { ...secours, activite: activity.id, parDefaut: true } : null;
   } catch (err) {
     console.warn(`[objectifs] ${activity.id} : ${err.message}`);
@@ -531,7 +636,10 @@ async function pourGroupe(settings, activity, profils, contexte = {}) {
   const meneur = profils[0];
 
   try {
-    const commun = await groupe(settings, profils, { categories: activity.objectif?.categories });
+    const commun = await groupe(settings, profils, {
+      categories: activity.objectif?.categories,
+      echelle: contexte.echelle,
+    });
     if (commun) return { ...commun, activite: activity.id };
   } catch (err) {
     console.warn(`[objectifs] groupe ${activity.id} : ${err.message}`);

@@ -125,12 +125,17 @@ async function progressionsDuGroupe(settings, discordIds) {
  *
  * @returns {Promise<{objectif: object, texte: object|null}|null>}
  */
-async function construireObjectif(settings, activity, brute, progress, groupe, live) {
+async function construireObjectif(settings, activity, brute, progress, groupe, live, section) {
   if (!activity.objectif) return null;
 
+  // L'échelle de la section suit l'objectif jusqu'au résolveur : une activité
+  // annoncée « quelques jours » qui répondrait « il te manque 3 points de
+  // réputation » se décrédibiliserait en une ligne.
+  const contexte = { live, echelle: section?.id };
+
   const objectif = groupe?.length > 1
-    ? await objectifs.pourGroupe(settings, brute, groupe, { live })
-    : await objectifs.pourActivite(settings, brute, progress, { live });
+    ? await objectifs.pourGroupe(settings, brute, groupe, contexte)
+    : await objectifs.pourActivite(settings, brute, progress, contexte);
 
   if (!objectif) return null;
 
@@ -495,7 +500,7 @@ module.exports = {
       const equipe = mode.id === 'groupe' ? await chargerGroupe() : null;
 
       const bloc = (progress?.ok && !dejaFait)
-        ? await construireObjectif(bot.settings, activity, brute, progress, equipe, live)
+        ? await construireObjectif(bot.settings, activity, brute, progress, equipe, live, section)
         : null;
 
       dernier = bloc ? { bloc, activity, mode, section, live, equipe, tout } : null;

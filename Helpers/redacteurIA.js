@@ -64,8 +64,10 @@ RÈGLES ABSOLUES
    Cela vaut aussi pour les points cardinaux, les mécaniques de boss, les tables
    de butin et les noms de vendeurs : n'en cite aucun dont tu ne sois sûr. Ne
    remplis jamais une étape avec un détail décoratif pour faire vrai.
-4. Tutoiement, ton chaleureux et direct, zéro emphase marketing, zéro emoji.
-5. Français de France.
+4. Respecte "duree_annoncee". N'écris pas "ce soir" pour un objectif étalé sur
+   plusieurs jours, ni "sur la durée" pour une soirée. C'est le rythme du joueur.
+5. Tutoiement, ton chaleureux et direct, zéro emphase marketing, zéro emoji.
+6. Français de France.
 
 FORMAT DE RÉPONSE — un objet JSON, rien d'autre, sans balises de code :
 {"accroche": "une ou deux phrases qui donnent envie de s'y mettre ce soir",
@@ -104,6 +106,7 @@ function extraireJson(brut) {
 function dossier(objectif, activity, live) {
   return {
     activite:        activity.titre,
+    duree_annoncee:  activity.duree,
     objectif:        objectif.cible,
     description:     objectif.contexte || undefined,
     progression:     objectif.progression || undefined,
@@ -117,18 +120,9 @@ function dossier(objectif, activity, live) {
   };
 }
 
-/**
- * Rédige l'accroche et les étapes d'un objectif.
- *
- * @param {object} settings
- * @param {object} objectif  sortie d'un résolveur de Helpers/objectifs.js
- * @param {object} activity  activité rendue (jetons déjà résolus)
- * @param {object|null} live veille saison
- * @returns {Promise<{accroche: string, etapes: string[]}|null>} null = repli sur les faits bruts
- */
-async function rediger(settings, objectif, activity, live) {
+/** Un aller-retour avec le modèle. Renvoie null sur n'importe quel raté. */
+async function tenter(settings, objectif, activity, live) {
   const { apiKey, model } = settings.openrouter || {};
-  if (!apiKey || !objectif) return null;
 
   let reponse;
   try {
@@ -190,9 +184,38 @@ async function rediger(settings, objectif, activity, live) {
   const accroche = borner(objet.accroche, ACCROCHE_MAX);
 
   // Une réponse vide des deux côtés ne vaut pas mieux que pas de réponse
-  if (!accroche && !etapes.length) return null;
+  if (!accroche && !etapes.length) {
+    console.warn('[redacteur] JSON valide mais vide');
+    return null;
+  }
 
   return { accroche, etapes };
+}
+
+/**
+ * Rédige l'accroche et les étapes d'un objectif.
+ *
+ * Une tentative sur huit revient inexploitable — hoquet du fournisseur, réponse
+ * hors format — alors que la même demande passe au coup suivant. Comme l'écran
+ * est déjà différé côté Discord, une reprise unique coûte quelques secondes au
+ * pire et évite de dégrader l'affichage pour un aléa réseau. Au-delà d'une
+ * reprise, on préfère les faits bruts à un joueur qui attend.
+ *
+ * @param {object} settings
+ * @param {object} objectif  sortie d'un résolveur de Helpers/objectifs.js
+ * @param {object} activity  activité rendue (jetons déjà résolus)
+ * @param {object|null} live veille saison
+ * @returns {Promise<{accroche: string, etapes: string[]}|null>} null = repli sur les faits bruts
+ */
+async function rediger(settings, objectif, activity, live) {
+  if (!settings.openrouter?.apiKey || !objectif) return null;
+
+  const premier = await tenter(settings, objectif, activity, live);
+  if (premier) return premier;
+
+  const reprise = await tenter(settings, objectif, activity, live);
+  if (!reprise) console.warn('[redacteur] deux échecs de suite, repli sur les faits bruts');
+  return reprise;
 }
 
 module.exports = { rediger };
