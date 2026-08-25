@@ -46,9 +46,11 @@ const ETAPES_MAX = 6;
 const VIVIER = 5;
 
 // Combien de candidats on accepte de sonder avant d'abandonner. Chaque sondage
-// coûte un appel de définition, et certains hauts faits n'ont pas de libellés
-// de critères exploitables.
-const SONDAGES_MAX = 5;
+// coûte un appel de définition — mis en cache ensuite — et certains hauts faits
+// n'ont pas de libellés de critères exploitables. Cinq était trop juste : une
+// mauvaise série suffisait à ne rien proposer alors que le profil regorgeait
+// de cibles valables.
+const SONDAGES_MAX = 8;
 
 // Paliers des hauts faits de collection. Ce sont ceux du jeu, pas des ronds de
 // notre invention : c'est ce qui permet à `preuve` d'être réellement vérifiable.
@@ -611,21 +613,40 @@ async function pourActivite(settings, activity, progress, contexte = {}) {
 
   const opts = { ...crochet, live: contexte.live, echelle: contexte.echelle };
 
-  try {
-    const resolveur = RESOLVEURS[crochet.type];
-    if (resolveur) {
-      const objectif = await resolveur(settings, progress, opts);
-      if (objectif) return { ...objectif, activite: activity.id };
-    }
+  /**
+   * Du plus pertinent au plus générique. On s'arrête au premier qui donne.
+   *
+   * Les deux étapes intermédiaires comptent autant que les autres : beaucoup de
+   * catégories — Quêtes en tête — sont pleines de hauts faits à compteur
+   * (« terminer 3 000 quêtes ») que le résolveur à critères ne voit pas. Sans
+   * elles, une activité de quêtes pouvait n'avoir aucun objectif alors que le
+   * profil en contenait six utilisables.
+   */
+  const chaine = [
+    ['déclaré',           RESOLVEURS[crochet.type], opts],
+    ['compteur thématique', hautFaitQuantite,       opts],
+    ['critères, toutes catégories', hautFaitCriteres, { echelle: contexte.echelle }],
+    ['compteur, toutes catégories', hautFaitQuantite, { echelle: contexte.echelle }],
+  ];
 
-    // Repli maison : un haut fait entamé, sans contrainte de catégorie mais
-    // toujours au bon format de durée
-    const secours = await hautFaitCriteres(settings, progress, { echelle: contexte.echelle });
-    return secours ? { ...secours, activite: activity.id, parDefaut: true } : null;
-  } catch (err) {
-    console.warn(`[objectifs] ${activity.id} : ${err.message}`);
-    return null;
+  for (const [etiquette, resolveur, options] of chaine) {
+    if (!resolveur) continue;
+    try {
+      const objectif = await resolveur(settings, progress, options);
+      if (objectif) {
+        return { ...objectif, activite: activity.id, parDefaut: etiquette !== 'déclaré' };
+      }
+    } catch (err) {
+      console.warn(`[objectifs] ${activity.id} (${etiquette}) : ${err.message}`);
+    }
   }
+
+  // Le silence est une information : sans cette trace, un objectif manquant
+  // ressemble à un bot mal déployé — on a déjà cherché une soirée pour ça.
+  console.log(`[objectifs] ${activity.id} : aucun objectif — ` +
+    `${(progress.candidats || []).length} candidat(s) au profil, ` +
+    `crochet ${crochet.type}${crochet.categories ? ` sur [${crochet.categories}]` : ''}`);
+  return null;
 }
 
 /**

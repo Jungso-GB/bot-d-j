@@ -36,9 +36,15 @@ const CONCURRENCE = 6;
 // une récursion infinie sur 170 appels réseau se remarquerait tard).
 const PROFONDEUR_MAX = 6;
 
+// Combien de temps on tient un échec de définition pour acquis avant de
+// retenter. Assez long pour ne pas marteler une API en difficulté, assez court
+// pour qu'une panne passagère se répare toute seule.
+const ECHEC_TTL_MS = 10 * 60 * 1000;
+
 let memoire = null; // index lu depuis le disque, gardé en RAM
 
-// Définitions de hauts faits déjà téléchargées — { name, description, criteres }
+// Définitions déjà téléchargées, clé = identifiant de haut fait.
+// Valeur : { def } en cas de succès, { def: null, reessayerApres } en cas d'échec.
 const definitions = new Map();
 
 /** Exécute les tâches par petits paquets plutôt que toutes d'un coup. */
@@ -161,12 +167,20 @@ function filtreCategories(settings, categories) {
  * @returns {Promise<{name, description, recompense, criteres: Map<number,string>}|null>}
  */
 async function definition(settings, achievementId) {
-  if (definitions.has(achievementId)) return definitions.get(achievementId);
+  const enCache = definitions.get(achievementId);
+  if (enCache !== undefined) {
+    // Un succès est définitif : ces données ne bougent qu'aux patchs.
+    if (enCache.def) return enCache.def;
+    // Un échec ne l'est pas. Une coupure réseau ou un 429 passager suffirait
+    // sinon à priver le bot de ce haut fait jusqu'au prochain redémarrage —
+    // et si le coup de chaud touche toute une rafale d'appels, c'est le
+    // système d'objectifs entier qui reste muet sans qu'on comprenne pourquoi.
+    if (Date.now() < enCache.reessayerApres) return null;
+  }
 
-  let def = null;
   try {
     const brut = await blizzardGet(settings, `/data/wow/achievement/${achievementId}`, 'static');
-    def = {
+    const def = {
       id:          brut.id,
       name:        brut.name,
       description: brut.description || '',
@@ -177,12 +191,12 @@ async function definition(settings, achievementId) {
           .map(c => [c.id, c.description])
       ),
     };
+    definitions.set(achievementId, { def });
+    return def;
   } catch {
-    def = null; // mis en cache aussi : inutile de retenter un haut fait absent
+    definitions.set(achievementId, { def: null, reessayerApres: Date.now() + ECHEC_TTL_MS });
+    return null;
   }
-
-  definitions.set(achievementId, def);
-  return def;
 }
 
 /** Vide les caches mémoire (index et définitions). */
