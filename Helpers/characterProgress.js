@@ -31,6 +31,21 @@ const { blizzardGet, BlizzardError } = require('./blizzardApi');
 // Un profil ne bouge pas assez vite pour justifier mieux
 const TTL_MS = 6 * 60 * 60 * 1000;
 
+/**
+ * Un profil qu'on n'a PAS réussi à lire se garde beaucoup moins longtemps.
+ *
+ * Six heures sur un échec, c'est six heures de `/que-faire` sans objectif pour
+ * une panne d'API de trente secondes. C'est aussi ce qui rendait fausse la
+ * promesse faite à l'écran d'aide — « relance la commande, le changement est
+ * pris en compte dans les minutes qui suivent » — puisqu'un joueur qui venait
+ * d'ouvrir son profil restait bloqué sur le refus mis en cache.
+ */
+const TTL_ECHEC_MS = 10 * 60 * 1000;
+
+// Une lecture ratée pour cause de panne mérite une seconde chance immédiate ;
+// un refus assumé (403) ou un personnage absent (404) n'en méritent aucune.
+const REESSAIS = 1;
+
 // Un haut fait à un seul critère n'a rien à raconter : il est fait ou il ne
 // l'est pas, et c'est le résolveur « haut fait simple » qui s'en occupe.
 const CRITERES_MINIMUM = 2;
@@ -50,14 +65,21 @@ function membreDepuisDiscord(settings, discordId) {
 
 /** Un appel de profil qui absorbe son échec : null plutôt qu'une exception. */
 async function volet(settings, endpoint) {
-  try {
-    return await blizzardGet(settings, endpoint, 'profile');
-  } catch (err) {
-    if (err instanceof BlizzardError && (err.status === 403 || err.status === 404)) {
-      return { _refus: err.status };
+  for (let essai = 0; essai <= REESSAIS; essai++) {
+    try {
+      return await blizzardGet(settings, endpoint, 'profile');
+    } catch (err) {
+      // Un refus est une réponse, pas une panne : inutile d'insister
+      if (err instanceof BlizzardError && (err.status === 403 || err.status === 404)) {
+        return { _refus: err.status };
+      }
+      if (essai === REESSAIS) {
+        console.warn(`[progression] ${endpoint} injoignable : ${err.message}`);
+        return null;
+      }
     }
-    return null;
   }
+  return null;
 }
 
 /**
@@ -129,11 +151,20 @@ async function chargerProgression(settings, membre) {
     volet(settings, `${base}/quests/completed`),
   ]);
 
-  const refus = [hf, montures, mplus].find(v => v?._refus);
-  if (refus && !hf?.achievements) {
+  // Le volet hauts faits est le socle de tout : sans lui, on ne sait ni ce qui
+  // est fait, ni ce qui manque. Le déclarer « lu » alors qu'il est vide donne
+  // un profil qui se prétend exploitable et ne contient rien — l'écran affiche
+  // alors l'activité nue, instantanément, sans que rien ne signale la panne.
+  //
+  // On distingue les trois refus, parce qu'ils n'appellent pas la même réponse :
+  // la confidentialité se règle côté joueur, l'indisponibilité se règle toute
+  // seule, et un personnage introuvable demande un /add.
+  if (!hf?.achievements) {
     return {
       ok: false,
-      raison: refus._refus === 403 ? 'prive' : 'introuvable',
+      raison: hf?._refus === 403 ? 'prive'
+            : hf?._refus === 404 ? 'introuvable'
+            : 'indisponible',
       personnage: `${membre.name}-${membre.realm}`,
       discordId: membre.discordId,
     };
@@ -213,8 +244,12 @@ async function progressionDe(settings, discordId, options = {}) {
     progress = { ok: false, raison: 'erreur', discordId };
   }
 
-  // On met même les refus en cache : inutile de retaper toutes les 5 secondes
-  cache.set(cle, { progress, expiresAt: Date.now() + TTL_MS });
+  // On met même les refus en cache — inutile de retaper toutes les 5 secondes —
+  // mais bien moins longtemps : un échec doit pouvoir se réparer dans la séance.
+  cache.set(cle, {
+    progress,
+    expiresAt: Date.now() + (progress.ok ? TTL_MS : TTL_ECHEC_MS),
+  });
   return progress;
 }
 

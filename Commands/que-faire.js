@@ -65,7 +65,10 @@ function mentionProgression(progress, groupe = null) {
       : `Progression lue sur ${progress.personnage}`;
   }
   if (progress?.raison === 'prive') {
-    return '🔒 Profil illisible — objectifs personnalisés désactivés';
+    return '🔒 Profil fermé — objectifs personnalisés désactivés';
+  }
+  if (progress?.raison === 'indisponible' || progress?.raison === 'erreur') {
+    return '⚠️ Blizzard ne répond pas — réessaie dans quelques minutes';
   }
   if (progress?.raison === 'introuvable') {
     return `Personnage introuvable côté Blizzard${progress.personnage ? ` (${progress.personnage})` : ''}`;
@@ -403,6 +406,21 @@ function aideScreen(progress) {
       'Demande à un officier de t\'ajouter avec `/add`, et je pourrai te proposer ' +
       'des objectifs taillés sur ta progression réelle plutôt que des idées au hasard.'
     );
+    return { embeds: [embed], flags: MessageFlags.Ephemeral };
+  }
+
+  // Une panne n'est pas un réglage : inutile d'envoyer le joueur fouiller ses
+  // paramètres Battle.net pour quelque chose qui va se réparer tout seul.
+  if (progress?.raison === 'indisponible' || progress?.raison === 'erreur') {
+    embed
+      .setColor(0xe67e22)
+      .setTitle('⚠️ Blizzard ne me répond pas')
+      .setDescription(
+        'Ce n\'est pas toi, et ce n\'est pas un réglage à changer : l\'API de Blizzard ' +
+        'est momentanément injoignable.\n\n' +
+        'Je réessaie automatiquement dans les dix minutes. Relance `/que-faire` ' +
+        'un peu plus tard et les objectifs personnalisés reviendront tout seuls.'
+      );
     return { embeds: [embed], flags: MessageFlags.Ephemeral };
   }
 
