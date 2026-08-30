@@ -30,6 +30,9 @@ const { rediger, borner } = require('../Helpers/redacteurIA');
 // Durée pendant laquelle les boutons restent cliquables
 const TIMEOUT_MS = 10 * 60 * 1000;
 
+// Affiché en tête d'écran tant que la fonctionnalité se stabilise.
+const NOTE_DEV = '**Fonctionnalité encore en développement. Utilisable mais quelques bugs peuvent arriver.**';
+
 /**
  * Ouvertures de l'écran d'accueil.
  *
@@ -279,7 +282,7 @@ function modeScreen(progress, tout, groupe, salut) {
   const embed = new EmbedBuilder()
     .setColor(0x9b59b6)
     .setTitle('🍖 Que faire aujourd\'hui ?')
-    .setDescription(`${salut}\n\nD'abord, tu joues comment ce soir ?`)
+    .setDescription(`${NOTE_DEV}\n\n${salut}\n\nD'abord, tu joues comment ce soir ?`)
     .addFields(
       MODES.map(m => ({
         name: `${m.emoji} ${m.label}`,

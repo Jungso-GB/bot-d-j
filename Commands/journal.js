@@ -38,6 +38,9 @@ const id = (action, cle = NONE) => `${PREFIX}:${action}:${cle}`;
 
 const COULEUR = 0xc8a165;
 
+// Affiché en tête d'écran tant que le suivi des quêtes se stabilise.
+const NOTE_DEV = '**Fonctionnalité encore en développement. Utilisable mais quelques bugs peuvent arriver.**';
+
 /** Depuis combien de jours la quête est-elle ouverte ? Au moins 1. */
 function joursDepuis(iso) {
   const pris = Date.parse(iso);
@@ -80,6 +83,7 @@ function journalScreen(quetes, settings) {
 
   if (!quetes.length) {
     embed.setDescription(
+      `${NOTE_DEV}\n\n` +
       'Pas une seule quête en cours, mon jambonneau. Ton carnet est vierge et ' +
       'ta chope est vide.\n\nLance `/que-faire`, prends un objectif, et reviens ' +
       'me voir, j\'en tiendrai le compte.'
@@ -87,6 +91,7 @@ function journalScreen(quetes, settings) {
   } else {
     const reste = objectifsSuivi.JOURNAL_MAX - quetes.length;
     embed.setDescription(
+      `${NOTE_DEV}\n\n` +
       `**${quetes.length}** quête${quetes.length > 1 ? 's' : ''} en cours` +
       (reste ? ` · ${reste} place${reste > 1 ? 's' : ''} libre${reste > 1 ? 's' : ''}` : ' · journal plein') +
       `\n\n${commentCaSeValide(settings)}`
