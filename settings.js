@@ -1,5 +1,28 @@
 const path = require('path');
 
+/**
+ * Où vivent les fichiers de données.
+ *
+ * Un conteneur est recréé à chaque redémarrage : ce qui est écrit ailleurs que
+ * sur un volume monté disparaît avec lui, et les quêtes en cours avec. Railway
+ * injecte le point de montage de son volume dans `RAILWAY_VOLUME_MOUNT_PATH` ;
+ * on le suit tel quel, sans avoir à régler quoi que ce soit à la main.
+ *
+ * `DATA_DIR` prend le relais pour les autres hébergeurs, et le dossier du dépôt
+ * sert de repli en local, où le disque est déjà persistant.
+ */
+const VOLUME = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
+const DATA_DIR = VOLUME || path.join(__dirname, 'data');
+
+/**
+ * Le chemin d'un fichier de données.
+ *
+ * La variable par fichier reste honorée pour ne casser aucun déploiement déjà
+ * en place, mais elle n'a plus de raison d'être : le dossier suffit, et sept
+ * variables à tenir synchronisées étaient sept occasions d'en oublier une.
+ */
+const donnees = (nom, variable) => process.env[variable] || path.join(DATA_DIR, nom);
+
 module.exports = {
   // ID du serveur Discord principal
   mainGuildId: process.env.GUILD_ID || '',
@@ -11,28 +34,32 @@ module.exports = {
   // Laisser vide ('') pour désactiver la sauvegarde
   backupChannelId: '1499834446642413658',
 
-  // Chemin vers le fichier JSON des membres.
-  // En prod sur Render : variable d'env MEMBERS_FILE_PATH=/data/members.json
-  // En local : ./data/members.json par défaut
-  membersFilePath: process.env.MEMBERS_FILE_PATH || path.join(__dirname, 'data', 'members.json'),
+  // Dossier de données, et si oui ou non il survit à un redémarrage.
+  // `Helpers/amorcageDonnees` s'en sert pour amorcer ce qui manque et pour
+  // crier si le bot tourne en conteneur sans volume monté.
+  dataDir: DATA_DIR,
+  volumeMonte: !!VOLUME,
 
-  // Chemin vers le fichier JSON des relations Main/ALT (généré par /import-alts)
-  altsFilePath: process.env.ALTS_FILE_PATH || path.join(__dirname, 'data', 'alts.json'),
+  // Le roster de la guilde
+  membersFilePath: donnees('members.json', 'MEMBERS_FILE_PATH'),
 
-  // Chemin vers le fichier JSON des infos de la guilde (compte Raider.io)
-  guildInfoFilePath: process.env.GUILD_INFO_FILE_PATH || path.join(__dirname, 'data', 'guild-info.json'),
+  // Les relations Main/ALT (générées par /import-alts)
+  altsFilePath: donnees('alts.json', 'ALTS_FILE_PATH'),
 
-  // Chemin vers le fichier JSON des événements Raid Helper
-  eventsFilePath: process.env.EVENTS_FILE_PATH || path.join(__dirname, 'data', 'events.json'),
+  // Les infos de la guilde (compte Raider.io)
+  guildInfoFilePath: donnees('guild-info.json', 'GUILD_INFO_FILE_PATH'),
 
-  // Chemin vers le fichier JSON de la veille WoW (saison, donjons M+, affixes)
-  wowSeasonFilePath: process.env.WOW_SEASON_FILE_PATH || path.join(__dirname, 'data', 'wow-season.json'),
+  // Les événements Raid Helper
+  eventsFilePath: donnees('events.json', 'EVENTS_FILE_PATH'),
 
-  // Chemin vers l'index des hauts faits par catégorie (construit depuis l'API Blizzard)
-  hautsFaitsFilePath: process.env.HAUTS_FAITS_FILE_PATH || path.join(__dirname, 'data', 'wow-hauts-faits.json'),
+  // La veille WoW (saison, donjons M+, affixes)
+  wowSeasonFilePath: donnees('wow-season.json', 'WOW_SEASON_FILE_PATH'),
 
-  // Chemin vers les objectifs personnels en cours (posés par /que-faire)
-  objectifsFilePath: process.env.OBJECTIFS_FILE_PATH || path.join(__dirname, 'data', 'objectifs.json'),
+  // L'index des hauts faits par catégorie (construit depuis l'API Blizzard)
+  hautsFaitsFilePath: donnees('wow-hauts-faits.json', 'HAUTS_FAITS_FILE_PATH'),
+
+  // Les journaux de quêtes, posés par /que-faire
+  objectifsFilePath: donnees('objectifs.json', 'OBJECTIFS_FILE_PATH'),
 
   // ── Veille World of Warcraft ───────────────────────────────────────
   // API Blizzard : identifiants créés sur https://develop.battle.net/access/clients

@@ -1,9 +1,20 @@
 require('module-alias/register');
 require('dotenv').config();
 
+const fs = require('fs');
+
+// ── Dossier de données ──
+// Création, amorçage depuis les graines du dépôt, et alerte si le bot tourne
+// en conteneur sans volume monté. Voir Helpers/amorcageDonnees.
+//
+// Fait avant tout le reste, et surtout avant d'ouvrir le serveur HTTP : les
+// routes ci-dessous servent ces fichiers, autant qu'ils soient en place.
+const settings = require('./settings');
+require('./Helpers/amorcageDonnees').preparer(settings);
+// ── Fin dossier de données ──
+
 // ── Serveur HTTP (health check + API membres) ──
 const express = require('express');
-const fs      = require('fs');
 const app     = express();
 const PORT    = process.env.PORT || 10000;
 
@@ -15,13 +26,10 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => res.send('🍖 Donjons & Jambons Bot · online'));
 
-const pathModule = require('path');
-
 // Endpoint que le site appellera pour récupérer les membres
 app.get('/api/members', (req, res) => {
   try {
-    const filePath = process.env.MEMBERS_FILE_PATH
-      || pathModule.join(__dirname, 'data', 'members.json');
+    const filePath = settings.membersFilePath;
     const data = fs.readFileSync(filePath, 'utf8');
     res.setHeader('Content-Type', 'application/json');
     res.send(data);
@@ -33,8 +41,7 @@ app.get('/api/members', (req, res) => {
 // Endpoint pour les relations Main/ALT (généré par /import-alts)
 app.get('/api/alts', (req, res) => {
   try {
-    const filePath = process.env.ALTS_FILE_PATH
-      || pathModule.join(__dirname, 'data', 'alts.json');
+    const filePath = settings.altsFilePath;
     if (!fs.existsSync(filePath)) {
       return res.json({ relations: {}, altOf: {}, characters: {}, totalRelationships: 0, totalMains: 0 });
     }
@@ -49,8 +56,7 @@ app.get('/api/alts', (req, res) => {
 // Endpoint pour les événements Raid Helper
 app.get('/api/events', (req, res) => {
   try {
-    const filePath = process.env.EVENTS_FILE_PATH
-      || pathModule.join(__dirname, 'data', 'events.json');
+    const filePath = settings.eventsFilePath;
     if (!fs.existsSync(filePath)) {
       console.log('[/api/events] events.json introuvable, retour tableau vide');
       return res.json({ updatedAt: null, totalEvents: 0, events: [] });
@@ -70,8 +76,7 @@ app.get('/api/events', (req, res) => {
 app.get('/api/events/refresh', async (req, res) => {
   console.log('[/api/events/refresh] Rechargement forcé demandé');
   try {
-    const fetchFn  = require('./Helpers/fetchRaidHelperEvents');
-    const settings = require('./settings');
+    const fetchFn = require('./Helpers/fetchRaidHelperEvents');
     await fetchFn(settings);
     const filePath = settings.eventsFilePath;
     if (!fs.existsSync(filePath)) {
@@ -90,8 +95,7 @@ app.get('/api/events/refresh', async (req, res) => {
 // Endpoint pour la veille WoW (extension, saison M+, donjons, affixes)
 app.get('/api/wow-season', (req, res) => {
   try {
-    const filePath = process.env.WOW_SEASON_FILE_PATH
-      || pathModule.join(__dirname, 'data', 'wow-season.json');
+    const filePath = settings.wowSeasonFilePath;
     if (!fs.existsSync(filePath)) {
       return res.json({ updatedAt: null, expansion: null, season: null, dungeons: [], affixes: null });
     }
@@ -107,8 +111,7 @@ app.get('/api/wow-season', (req, res) => {
 app.get('/api/wow-season/refresh', async (req, res) => {
   console.log('[/api/wow-season/refresh] Rechargement forcé demandé');
   try {
-    const fetchFn  = require('./Helpers/fetchWowSeason');
-    const settings = require('./settings');
+    const fetchFn = require('./Helpers/fetchWowSeason');
     const { data, changed } = await fetchFn(settings);
     if (!data) return res.status(502).json({ ok: false, error: 'Rafraîchissement impossible' });
     res.json({ ok: true, changed, ...data });
@@ -121,8 +124,7 @@ app.get('/api/wow-season/refresh', async (req, res) => {
 // Endpoint pour les infos de la guilde (compte total Raider.io)
 app.get('/api/guild-info', (req, res) => {
   try {
-    const filePath = process.env.GUILD_INFO_FILE_PATH
-      || pathModule.join(__dirname, 'data', 'guild-info.json');
+    const filePath = settings.guildInfoFilePath;
     if (!fs.existsSync(filePath)) {
       return res.json({ memberCount: null });
     }
@@ -136,24 +138,6 @@ app.get('/api/guild-info', (req, res) => {
 
 app.listen(PORT, () => console.log(`🌐 Serveur HTTP en écoute sur le port ${PORT}`));
 // ── Fin serveur HTTP ──
-
-// ── Initialisation du fichier membres (disque persistant) ──
-// Si le fichier n'existe pas encore (premier déploiement sur Render),
-// on le crée avec un tableau vide plutôt que de planter au premier appel.
-const settings = require('./settings');
-const membersDir = pathModule.dirname(settings.membersFilePath);
-if (!fs.existsSync(membersDir)) {
-  fs.mkdirSync(membersDir, { recursive: true });
-  console.log(`📁 Dossier créé : ${membersDir}`);
-}
-if (!fs.existsSync(settings.membersFilePath)) {
-  fs.writeFileSync(settings.membersFilePath, '[]', 'utf8');
-  console.log(`📄 members.json initialisé sur le disque persistant : ${settings.membersFilePath}`);
-} else {
-  const count = JSON.parse(fs.readFileSync(settings.membersFilePath, 'utf8')).length;
-  console.log(`📄 members.json chargé (${count} membre(s)) depuis : ${settings.membersFilePath}`);
-}
-// ── Fin initialisation ──
 
 const Discord = require('discord.js');
 

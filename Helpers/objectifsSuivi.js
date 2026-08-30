@@ -99,7 +99,20 @@ function lire(settings) {
   let brut;
   try {
     brut = JSON.parse(fs.readFileSync(settings.objectifsFilePath, 'utf8'));
-  } catch {
+  } catch (err) {
+    // Un fichier absent est normal au premier lancement. Un fichier présent
+    // mais illisible ne l'est pas : le traiter comme vide effacerait tous les
+    // engagements dès l'écriture suivante, sans un mot. On le met de côté sous
+    // un autre nom, où il reste récupérable, et on le dit fort.
+    if (err.code !== 'ENOENT') {
+      const ecarte = `${settings.objectifsFilePath}.illisible-${Date.now()}`;
+      try {
+        fs.renameSync(settings.objectifsFilePath, ecarte);
+        console.error(`[objectifs] fichier illisible (${err.message}), mis de côté : ${ecarte}`);
+      } catch (autre) {
+        console.error(`[objectifs] fichier illisible (${err.message}) et impossible à écarter : ${autre.message}`);
+      }
+    }
     return { encours: {}, faits: [], totaux: {} };
   }
 

@@ -1,1 +1,9 @@
+# Secrets
 .env
+
+# Données d'exécution.
+# Elles vivent sur le volume de l'hébergeur, pas dans le dépôt : les versionner
+# faisait écraser l'état réel à chaque déploiement, et le journal de quêtes de
+# tout le monde repartait de zéro. Les états de départ sont dans data/graines/.
+data/*.json
+!data/graines/*.json
