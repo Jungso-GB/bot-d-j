@@ -104,6 +104,25 @@ function mentionProgression(progress, groupe = null) {
   return null;
 }
 
+/**
+ * Pourquoi une quête n'a pas pu être ajoutée au journal.
+ *
+ * Les deux refus se ressemblent à l'écran et n'appellent pas le même geste :
+ * l'un demande de faire de la place, l'autre dit simplement que c'est déjà
+ * fait. Les confondre enverrait le joueur abandonner une quête pour rien.
+ */
+function refus(resultat) {
+  if (resultat.raison === 'plafond') {
+    return `📓 Ton journal est plein — ${objectifsSuivi.JOURNAL_MAX} quêtes en cours. `
+         + 'Abandonnes-en une avec `/journal` avant d\'en prendre une nouvelle.';
+  }
+  if (resultat.raison === 'doublon') {
+    return `📓 **${resultat.entree.cible}** est déjà dans ton journal — `
+         + 'tu es donc déjà dessus. Tire une autre activité si tu veux du neuf.';
+  }
+  return '🎲 Cet objectif ne peut pas être suivi — relance un tirage.';
+}
+
 /** « 12 activités possibles » ou « 12 possibles · 3 déjà faites ». */
 function libelleCompte(c) {
   if (!c.faits) return `${c.total} activités possibles`;
@@ -612,6 +631,12 @@ module.exports = {
     /**
      * Enregistrement volontaire de l'objectif affiché.
      *
+     * La quête s'ajoute au journal, elle ne remplace plus rien : on peut mener
+     * plusieurs chantiers de front, et c'est le plafond du journal qui dit stop.
+     * Un refus n'est donc pas une erreur mais une information, et il faut qu'il
+     * dise où aller — sans quoi le joueur reclique sur un bouton qui ne fera
+     * rien de plus la deuxième fois.
+     *
      * Un objectif de groupe engage le meneur : c'est lui qui a lancé la
      * commande, c'est son profil qui servira de juge, et c'est donc lui seul
      * qu'on félicitera. Les autres suivent pour le plaisir.
@@ -625,24 +650,29 @@ module.exports = {
       }
 
       const { bloc, activity, mode, section, live, equipe, tout } = dernier;
-      const precedent = objectifsSuivi.enCours(bot.settings, interaction.user.id);
+      const resultat = objectifsSuivi.noter(
+        bot.settings, interaction.user.id, bloc.objectif, activity, progress
+      );
 
-      objectifsSuivi.noter(bot.settings, interaction.user.id, bloc.objectif, activity, progress);
+      if (!resultat.ok) {
+        return i.reply({ content: refus(resultat), flags: MessageFlags.Ephemeral });
+      }
 
       await i.update(
         activityScreen(mode, section, activity, bloc, live, progress, tout, false, equipe, true)
       );
 
-      // On ne remplace pas un engagement en silence
-      if (precedent && precedent.cible !== bloc.objectif.cible) {
-        const rappel = precedent.lien
-          ? `**[${precedent.cible}](${precedent.lien})**`
-          : `**${precedent.cible}**`;
-        await i.followUp({
-          content: `📌 Ton objectif précédent — ${rappel} — a été remplacé.`,
-          flags: MessageFlags.Ephemeral,
-        });
-      }
+      // Le journal n'est visible nulle part sur cet écran : on dit à voix basse
+      // combien de chantiers sont ouverts, et par où les retrouver.
+      const places = resultat.reste
+        ? `${resultat.reste} place${resultat.reste > 1 ? 's' : ''} libre${resultat.reste > 1 ? 's' : ''}`
+        : 'journal plein';
+
+      await i.followUp({
+        content: `📓 Quête ajoutée à ton journal — **${resultat.total}** en cours, ${places}. `
+               + '`/journal` pour les revoir ou en abandonner une.',
+        flags: MessageFlags.Ephemeral,
+      });
     };
 
     collector.on('collect', async (i) => {
