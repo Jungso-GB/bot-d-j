@@ -38,15 +38,15 @@ module.exports = {
       }
     }
 
-    const lines = [`**📋 Roster — ${members.length} membre(s)**\n`];
+    const lines = [`**📋 Roster · ${members.length} membre(s)**\n`];
 
     for (const [role, list] of Object.entries(byRole)) {
       if (!list.length) continue;
       lines.push(`${ROLE_EMOJI[role]} **${role}** (${list.length})`);
       for (const m of list) {
-        const classe = m.class ? ` — ${m.class}` : '';
+        const classe = m.class ? ` · ${m.class}` : '';
         const profs  = m.professions?.length ? ` *(${m.professions.join(', ')})*` : '';
-        lines.push(`  • **${m.name}** \`${m.realm}\`${classe} — *${m.rank}*${profs}`);
+        lines.push(`  • **${m.name}** \`${m.realm}\`${classe} · *${m.rank}*${profs}`);
       }
       lines.push('');
     }

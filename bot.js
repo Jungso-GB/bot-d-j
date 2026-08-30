@@ -13,7 +13,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/', (req, res) => res.send('🍖 Donjons & Jambons Bot — online'));
+app.get('/', (req, res) => res.send('🍖 Donjons & Jambons Bot · online'));
 
 const pathModule = require('path');
 
@@ -52,7 +52,7 @@ app.get('/api/events', (req, res) => {
     const filePath = process.env.EVENTS_FILE_PATH
       || pathModule.join(__dirname, 'data', 'events.json');
     if (!fs.existsSync(filePath)) {
-      console.log('[/api/events] events.json introuvable — retour tableau vide');
+      console.log('[/api/events] events.json introuvable, retour tableau vide');
       return res.json({ updatedAt: null, totalEvents: 0, events: [] });
     }
     const data = fs.readFileSync(filePath, 'utf8');
@@ -199,7 +199,7 @@ async function veilleWow() {
   if (!channel) return;
 
   const nouvelleExtension = previous?.expansion?.id !== data.expansion?.id;
-  const donjons = data.dungeons.map(d => `• ${d.name} — ${d.timerMinutes} min`).join('\n');
+  const donjons = data.dungeons.map(d => `• ${d.name} · ${d.timerMinutes} min`).join('\n');
 
   channel.send(
     [
@@ -221,7 +221,7 @@ async function veilleWow() {
  * L'index des hauts faits est le socle des objectifs personnalisés de
  * /que-faire. Il ne bouge qu'aux patchs, mais il coûte ~170 appels à
  * construire : on le reconstruit donc au même rythme que la veille, et jamais
- * à la demande. Son échec ne doit rien empêcher — sans lui, les objectifs
+ * à la demande. Son échec ne doit rien empêcher : sans lui, les objectifs
  * cessent simplement d'être filtrés par thème.
  */
 async function veilleComplete() {
@@ -256,7 +256,7 @@ bot.on('ready', async () => {
   setInterval(() => fetchRaidHelperEvents(settings), 24 * 60 * 60 * 1000);
 
   // Veille WoW : une passe au démarrage (le bot peut avoir été éteint au moment
-  // du créneau), puis à jour et heure fixes — voir settings.veilleSchedule.
+  // du créneau), puis à jour et heure fixes (voir settings.veilleSchedule).
   veilleWow();
   planifierHebdo(settings.veilleSchedule, veilleComplete, 'veille WoW');
   console.log(`🗓️  Veille WoW planifiée ${libelleSchedule(settings.veilleSchedule)}`);

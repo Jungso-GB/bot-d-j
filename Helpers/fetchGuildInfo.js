@@ -8,7 +8,7 @@ const path  = require('path');
  * Récupère les infos de la guilde depuis Raider.io et les sauvegarde en JSON.
  * Retourne { name, realm, memberCount, updatedAt } ou null en cas d'échec.
  *
- * @param {string} guildInfoFilePath  – Chemin du fichier de sortie
+ * @param {string} guildInfoFilePath  Chemin du fichier de sortie
  */
 async function fetchGuildInfo(guildInfoFilePath) {
   const url =
@@ -34,7 +34,7 @@ async function fetchGuildInfo(guildInfoFilePath) {
             const dir = path.dirname(guildInfoFilePath);
             if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(guildInfoFilePath, JSON.stringify(info, null, 2), 'utf8');
-            console.log(`[guild-info] ${info.name} — ${info.memberCount} membre(s) total`);
+            console.log(`[guild-info] ${info.name} · ${info.memberCount} membre(s) total`);
             resolve(info);
           } catch (err) {
             console.warn('[guild-info] Parse échoué :', err.message);

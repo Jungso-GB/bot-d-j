@@ -6,11 +6,11 @@
  * `/que-faire` propose et engage, `/journal` se souvient. Entre les deux il n'y
  * avait rien : une quête prise disparaissait de l'écran et ne réapparaissait
  * qu'au moment où elle tombait, des semaines plus tard. Elle n'existait donc
- * que dans la tête du joueur — ce qui est exactement ce qu'un journal est censé
+ * que dans la tête du joueur, ce qui est exactement ce qu'un journal est censé
  * éviter.
  *
  * Tout est éphémère : c'est le carnet du joueur, pas une annonce. Le classement
- * fait exception au principe mais pas à l'affichage — il reste éphémère lui
+ * fait exception au principe mais pas à l'affichage : il reste éphémère lui
  * aussi, la fierté publique étant déjà servie par l'annonce automatique quand
  * une quête tombe.
  */
@@ -59,7 +59,7 @@ function anciennete(iso) {
  *
  * La cadence vient du réglage et non d'un texte écrit en dur : changer
  * `objectifsSchedule` sans changer cette phrase en ferait un mensonge. Les
- * vingt-quatre heures, elles, ne dépendent pas de nous — c'est Blizzard qui
+ * vingt-quatre heures, elles, ne dépendent pas de nous : c'est Blizzard qui
  * ne republie la fiche d'un personnage qu'après sa déconnexion, et qui prend
  * son temps. Mieux vaut l'annoncer que laisser croire à une panne.
  */
@@ -68,11 +68,11 @@ function commentCaSeValide(settings) {
   const cadence = h ? `toutes les ${h} h` : 'régulièrement';
 
   return `*Tu n'as rien à déclarer : je relis ton profil ${cadence} et je coche tout seul. `
-       + 'Compte jusqu\'à **24 h** entre ton exploit et la validation — Blizzard ne '
+       + 'Compte jusqu\'à **24 h** entre ton exploit et la validation : Blizzard ne '
        + 'republie ta fiche qu\'une fois déconnecté.*';
 }
 
-/** Écran 1 — la liste des quêtes en cours. */
+/** Écran 1 : la liste des quêtes en cours. */
 function journalScreen(quetes, settings) {
   const embed = new EmbedBuilder()
     .setColor(COULEUR)
@@ -82,7 +82,7 @@ function journalScreen(quetes, settings) {
     embed.setDescription(
       'Pas une seule quête en cours, mon jambonneau. Ton carnet est vierge et ' +
       'ta chope est vide.\n\nLance `/que-faire`, prends un objectif, et reviens ' +
-      'me voir — j\'en tiendrai le compte.'
+      'me voir, j\'en tiendrai le compte.'
     );
   } else {
     const reste = objectifsSuivi.JOURNAL_MAX - quetes.length;
@@ -138,7 +138,7 @@ function journalScreen(quetes, settings) {
   return { embeds: [embed], components: rows };
 }
 
-/** Écran 2 — tout ce qu'on sait d'une quête. */
+/** Écran 2 : tout ce qu'on sait d'une quête. */
 function detailScreen(quete, settings) {
   const embed = new EmbedBuilder()
     .setColor(COULEUR)
@@ -207,7 +207,7 @@ function detailScreen(quete, settings) {
 }
 
 /**
- * Écran 3 — confirmation d'abandon.
+ * Écran 3 : confirmation d'abandon.
  *
  * Un clic de trop efface l'ancienneté de la quête, et c'est la seule chose
  * qu'on ne peut pas reconstituer : la reprendre demain repart de zéro jour.
@@ -221,7 +221,7 @@ function abandonScreen(quete) {
       `**${quete.cible}**\n\n` +
       'Elle sort de ton journal et je cesse de la surveiller. Tu pourras la ' +
       'reprendre plus tard si elle ressort d\'un tirage, mais l\'ancienneté ' +
-      `repartira de zéro — celle-ci était ouverte depuis ${joursDepuis(quete.priseLe) ?? '?'} jour(s).`
+      `repartira de zéro, et celle-ci était ouverte depuis ${joursDepuis(quete.priseLe) ?? '?'} jour(s).`
     );
 
   const row = new ActionRowBuilder().addComponents(
@@ -247,11 +247,11 @@ function colonne(lignes, vide) {
   if (!lignes.length) return vide;
 
   return lignes.slice(0, 10)
-    .map((l, n) => `${MEDAILLES[n] || `\`${n + 1}.\``} <@${l.discordId}> — **${l.n}**`)
+    .map((l, n) => `${MEDAILLES[n] || `\`${n + 1}.\``} <@${l.discordId}> · **${l.n}**`)
     .join('\n');
 }
 
-/** Écran 4 — le palmarès de la guilde. */
+/** Écran 4 : le palmarès de la guilde. */
 function classementScreen(palmares) {
   const embed = new EmbedBuilder()
     .setColor(0xf1c40f)

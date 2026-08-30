@@ -47,7 +47,7 @@ const ETAPES_MAX = 6;
 const VIVIER = 5;
 
 // Combien de candidats on accepte de sonder avant d'abandonner. Chaque sondage
-// coûte un appel de définition — mis en cache ensuite — et certains hauts faits
+// coûte un appel de définition (mis en cache ensuite) et certains hauts faits
 // n'ont pas de libellés de critères exploitables. Cinq était trop juste : une
 // mauvaise série suffisait à ne rien proposer alors que le profil regorgeait
 // de cibles valables.
@@ -104,7 +104,7 @@ const prochainPalier = n => PALIERS.find(p => p > n) ?? null;
  * mascottes de l'API Blizzard ne sont pas ceux de Wowhead, et un donjon n'a pas
  * de fiche adressable par son `challenge_mode_id` : à ce jeu-là on tomberait
  * sur la fiche de quelqu'un d'autre, ce qui est pire que pas de lien du tout.
- * On se rabat donc sur une recherche ou une page de liste — toujours valides,
+ * On se rabat donc sur une recherche ou une page de liste : toujours valides,
  * simplement moins directes.
  */
 const WOWHEAD = 'https://www.wowhead.com/fr';
@@ -136,7 +136,7 @@ function comparateurParEchelle(echelle) {
     return (a, b) => b.manquants.length - a.manquants.length;
   }
   if (echelle === 'jours') {
-    // Bien entamé mais loin d'être fini — ni une formalité, ni un mur
+    // Bien entamé mais loin d'être fini : ni une formalité, ni un mur
     return (a, b) => Math.abs(ratio(a) - CIBLE_JOURS) - Math.abs(ratio(b) - CIBLE_JOURS);
   }
   // Une soirée : le plus près du but
@@ -245,7 +245,7 @@ const PALIERS_REPUTATION = ['Haï', 'Hostile', 'Inamical', 'Neutre', 'Amical', '
 
 /**
  * Barème de l'échelle de réputation classique : combien de points tient chaque
- * palier. Ces valeurs ne servent pas qu'à calculer — elles servent à vérifier.
+ * palier. Ces valeurs ne servent pas qu'à calculer : elles servent à vérifier.
  *
  * Beaucoup de factions modernes n'utilisent plus cette échelle du tout : Ve'nari
  * monte en « Crainte / Indifférence / Génie », les factions récentes en « Renom
@@ -304,7 +304,7 @@ async function reputation(settings, progress, opts = {}) {
       type: 'reputation',
       cible: `Passer ${suivant} chez ${choix.nom}`,
       contexte: '',
-      progression: `${choix.palier} — ${choix.valeur}/${choix.max}`,
+      progression: `${choix.palier} · ${choix.valeur}/${choix.max}`,
       etapes: [`Gagner ${restant} points de réputation chez ${choix.nom}`],
       reste: 0,
       recompense: '',
@@ -338,7 +338,7 @@ async function reputation(settings, progress, opts = {}) {
     type: 'reputation',
     cible: `Monter ${choix.nom} jusqu'à Exalté`,
     contexte: `Encore ${restant} points de réputation à gagner, soit ${paliers.length} palier${paliers.length > 1 ? 's' : ''}.`,
-    progression: `${choix.palier} — ${choix.valeur}/${choix.max}`,
+    progression: `${choix.palier} · ${choix.valeur}/${choix.max}`,
     etapes: [
       `Finir ${choix.palier} : ${choix.max - choix.valeur} points`,
       `Puis enchaîner ${paliers.join(', ')}`,
@@ -377,7 +377,7 @@ async function catalogue(settings, quoi) {
 /**
  * Provenances qu'on ne propose jamais comme objectif.
  *
- * Une monture de boutique ne se farme pas, elle s'achète — l'afficher dans un
+ * Une monture de boutique ne se farme pas, elle s'achète : l'afficher dans un
  * « voilà ce qu'il te manque » revient à envoyer le joueur à la caisse. Même
  * chose pour les promotions closes et les cartes à collectionner : ce sont des
  * manques définitifs, pas des objectifs.
@@ -411,7 +411,7 @@ async function provenance(settings, quoi, id) {
  * Objectif de collection : le prochain palier officiel, plus quelques pièces
  * qui manquent réellement, nommées.
  *
- * Le palier est ce qui rend l'objectif vérifiable — une monture précise peut ne
+ * Le palier est ce qui rend l'objectif vérifiable : une monture précise peut ne
  * jamais tomber, un palier finit toujours par arriver. Les noms cités servent
  * de pistes concrètes, pas de contrat.
  */
@@ -450,7 +450,7 @@ async function collection(settings, progress, opts = {}) {
     );
 
     for (const e of sondees.filter(e => e.src && !PROVENANCES_EXCLUES.has(e.src.type)).slice(0, PISTES_MAX)) {
-      etapes.push(e.src.nom ? `${e.nom} — ${e.src.nom}` : e.nom);
+      etapes.push(e.src.nom ? `${e.nom} · ${e.src.nom}` : e.nom);
       autorises.push(e.nom);
     }
   }
@@ -614,7 +614,7 @@ async function groupe(settings, profils, opts = {}) {
       ratio: membres.reduce((s, m) => s + m.candidat.faits / m.candidat.total, 0) / membres.length,
     }))
     .filter(c => c.membres.length >= 2)
-    // D'abord le nombre de concernés — c'est ce qui fait l'objectif commun —
+    // D'abord le nombre de concernés (c'est ce qui fait l'objectif commun),
     // puis l'avancement, dans le sens que réclame la durée de l'activité.
     .sort((a, b) => (b.membres.length - a.membres.length)
                  || (opts.echelle === 'defi' ? a.ratio - b.ratio : b.ratio - a.ratio));
@@ -679,7 +679,7 @@ const RESOLVEURS = {
  * Construit l'objectif d'une activité pour un joueur donné.
  *
  * L'activité déclare le type d'objectif qui lui va (`activity.objectif`). Si le
- * résolveur ne trouve rien — profil trop avancé, catégorie vide, API muette —
+ * résolveur ne trouve rien (profil trop avancé, catégorie vide, API muette),
  * on retombe sur un haut fait entamé toutes catégories confondues plutôt que de
  * ne rien proposer. Et si même ça échoue, on renvoie null : l'écran affichera
  * l'activité seule, exactement comme avant.
@@ -704,7 +704,7 @@ async function pourActivite(settings, activity, progress, contexte = {}) {
    * Du plus pertinent au plus générique. On s'arrête au premier qui donne.
    *
    * Les deux étapes intermédiaires comptent autant que les autres : beaucoup de
-   * catégories — Quêtes en tête — sont pleines de hauts faits à compteur
+   * catégories, Quêtes en tête, sont pleines de hauts faits à compteur
    * (« terminer 3 000 quêtes ») que le résolveur à critères ne voit pas. Sans
    * elles, une activité de quêtes pouvait n'avoir aucun objectif alors que le
    * profil en contenait six utilisables.
@@ -729,8 +729,8 @@ async function pourActivite(settings, activity, progress, contexte = {}) {
   }
 
   // Le silence est une information : sans cette trace, un objectif manquant
-  // ressemble à un bot mal déployé — on a déjà cherché une soirée pour ça.
-  console.log(`[objectifs] ${activity.id} : aucun objectif — ` +
+  // ressemble à un bot mal déployé, et on a déjà cherché une soirée pour ça.
+  console.log(`[objectifs] ${activity.id} : aucun objectif, ` +
     `${(progress.candidats || []).length} candidat(s) au profil, ` +
     `crochet ${crochet.type}${crochet.categories ? ` sur [${crochet.categories}]` : ''}`);
   return null;

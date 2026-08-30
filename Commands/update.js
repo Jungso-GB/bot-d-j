@@ -167,7 +167,7 @@ module.exports = {
     }
 
     writeMembers(filePath, members);
-    console.log(`[update] ${discordUser.username} — ${changes.join(', ')}`);
+    console.log(`[update] ${discordUser.username} · ${changes.join(', ')}`);
     await backupMembers(bot, filePath, 'Mise à jour', member.name);
 
     return interaction.followUp({

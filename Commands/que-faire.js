@@ -35,7 +35,7 @@ const TIMEOUT_MS = 10 * 60 * 1000;
  *
  * Le nom de la guilde est une blague à lui tout seul : autant la servir en
  * entrée plutôt que de la laisser dormir dans l'en-tête. Une salutation est
- * tirée par commande et non par écran — revenir en arrière ne doit pas donner
+ * tirée par commande et non par écran : revenir en arrière ne doit pas donner
  * l'impression d'avoir changé d'interlocuteur en cours de route.
  */
 const SALUTATIONS = [
@@ -90,16 +90,16 @@ function mentionProgression(progress, groupe = null) {
       : `Progression lue sur ${progress.personnage}`;
   }
   if (progress?.raison === 'prive') {
-    return '🔒 Profil fermé — objectifs personnalisés désactivés';
+    return '🔒 Profil fermé · objectifs personnalisés désactivés';
   }
   if (progress?.raison === 'indisponible' || progress?.raison === 'erreur') {
-    return '⚠️ Blizzard ne répond pas — réessaie dans quelques minutes';
+    return '⚠️ Blizzard ne répond pas · réessaie dans quelques minutes';
   }
   if (progress?.raison === 'introuvable') {
     return `Personnage introuvable côté Blizzard${progress.personnage ? ` (${progress.personnage})` : ''}`;
   }
   if (progress?.raison === 'non-enregistre') {
-    return 'Personnage non enregistré — utilise /add pour un tri personnalisé';
+    return 'Personnage non enregistré · utilise /add pour un tri personnalisé';
   }
   return null;
 }
@@ -113,14 +113,14 @@ function mentionProgression(progress, groupe = null) {
  */
 function refus(resultat) {
   if (resultat.raison === 'plafond') {
-    return `📓 Ton journal est plein — ${objectifsSuivi.JOURNAL_MAX} quêtes en cours. `
+    return `📓 Ton journal est plein : ${objectifsSuivi.JOURNAL_MAX} quêtes en cours. `
          + 'Abandonnes-en une avec `/journal` avant d\'en prendre une nouvelle.';
   }
   if (resultat.raison === 'doublon') {
-    return `📓 **${resultat.entree.cible}** est déjà dans ton journal — `
+    return `📓 **${resultat.entree.cible}** est déjà dans ton journal, `
          + 'tu es donc déjà dessus. Tire une autre activité si tu veux du neuf.';
   }
-  return '🎲 Cet objectif ne peut pas être suivi — relance un tirage.';
+  return '🎲 Cet objectif ne peut pas être suivi. Relance un tirage.';
 }
 
 /** « 12 activités possibles » ou « 12 possibles · 3 déjà faites ». */
@@ -134,7 +134,7 @@ function libelleCompte(c) {
 /**
  * Les identifiants Discord des joueurs présents dans le même salon vocal.
  *
- * Personne en vocal — ou intent absent — renvoie une liste vide, et tout le
+ * Personne en vocal (ou intent absent) renvoie une liste vide, et tout le
  * reste continue sur le seul profil du demandeur. Les bots sont écartés, et
  * l'auteur passe en tête : c'est lui qui donne le ton si le croisement échoue.
  */
@@ -167,7 +167,7 @@ async function progressionsDuGroupe(settings, discordIds) {
 
 /**
  * Bâtit le bloc « objectif » d'une activité : les faits d'abord, la rédaction
- * ensuite. Si l'IA ne répond pas, les faits s'affichent seuls — ils se
+ * ensuite. Si l'IA ne répond pas, les faits s'affichent seuls : ils se
  * suffisent, ils sont juste plus secs.
  *
  * @returns {Promise<{objectif: object, texte: object|null}|null>}
@@ -194,7 +194,7 @@ async function construireObjectif(settings, activity, brute, progress, groupe, l
 const CHAMP_MAX = 1024;
 
 // Repli quand l'IA n'a pas répondu : la description de Blizzard, qui peut faire
-// cinq lignes de prose. Elle situe, elle n'explique pas — l'utile est dans les
+// cinq lignes de prose. Elle situe, elle n'explique pas : l'utile est dans les
 // étapes juste en dessous. On la borne court plutôt que de la laisser pousser
 // les étapes hors du champ.
 const CONTEXTE_MAX = 180;
@@ -204,7 +204,7 @@ const CONTEXTE_MAX = 180;
  *
  * Le budget de caractères est serré et la prose de l'IA est de longueur
  * imprévisible. On assemble donc par ordre de valeur décroissante en s'arrêtant
- * avant le mur, plutôt que de tout coller et de couper au caractère près — une
+ * avant le mur, plutôt que de tout coller et de couper au caractère près : une
  * étape amputée en plein mot est pire que pas d'étape du tout.
  *
  * Les critères manquants sont réservés d'avance : ce sont les seules données
@@ -217,8 +217,8 @@ function ajouterObjectif(embed, bloc) {
 
   // Le nom de la cible passe du titre du champ à sa première ligne : les titres
   // de champ Discord n'acceptent pas les liens, et c'est bien la cible qu'on veut
-  // rendre cliquable. Les objectifs sans fiche à consulter — l'équipement, par
-  // exemple — gardent la même ligne, simplement pas cliquable.
+  // rendre cliquable. Les objectifs sans fiche à consulter, l'équipement par
+  // exemple, gardent la même ligne, simplement pas cliquable.
   const titre = objectif.lien
     ? `**[${objectif.cible}](${objectif.lien})**`
     : `**${objectif.cible}**`;
@@ -274,7 +274,7 @@ function ajouterObjectif(embed, bloc) {
 
 // ── Écrans ────────────────────────────────────────────────────────────
 
-/** Écran 1 — comment on joue : seul ou en groupe de 5. */
+/** Écran 1 : comment on joue, seul ou en groupe de 5. */
 function modeScreen(progress, tout, groupe, salut) {
   const embed = new EmbedBuilder()
     .setColor(0x9b59b6)
@@ -312,7 +312,7 @@ function modeScreen(progress, tout, groupe, salut) {
   return { embeds: [embed], components: rows };
 }
 
-/** Écran 2 — combien de temps on y consacre. */
+/** Écran 2 : combien de temps on y consacre. */
 function sectionScreen(mode, progress, tout) {
   const embed = new EmbedBuilder()
     .setColor(mode.color)
@@ -352,7 +352,7 @@ function sectionScreen(mode, progress, tout) {
   return { embeds: [embed], components: rows };
 }
 
-/** Écran 3 — l'activité tirée au sort, jetons résolus et objectif calculé. */
+/** Écran 3 : l'activité tirée au sort, jetons résolus et objectif calculé. */
 function activityScreen(mode, section, activity, bloc, live, progress, tout, dejaFait, groupe, pris = false) {
   const embed = new EmbedBuilder()
     .setColor(section.color)
@@ -379,12 +379,12 @@ function activityScreen(mode, section, activity, bloc, live, progress, tout, dej
   if (live?.season?.label) pied.push(live.season.label);
   if (bloc && pris) {
     pied.push(groupe?.length > 1
-      ? 'Objectif du groupe pris — je félicite quand il tombe'
-      : 'Objectif pris — je te félicite quand il tombe');
+      ? 'Objectif du groupe pris · je félicite quand il tombe'
+      : 'Objectif pris · je te félicite quand il tombe');
   } else if (bloc?.objectif?.preuve) {
     pied.push('Rien n\'est enregistré tant que tu ne l\'as pas pris');
   } else if (bloc) {
-    pied.push('Objectif collectif — à suivre entre vous');
+    pied.push('Objectif collectif · à suivre entre vous');
   } else {
     pied.push('Pas convaincu ? Relance le dé.');
   }
@@ -434,7 +434,7 @@ function activityScreen(mode, section, activity, bloc, live, progress, tout, dej
  * Il est affiché **sans aucun bouton**, et c'est tout l'intérêt : la résolution
  * prend quelques secondes, pendant lesquelles un joueur impatient cliquerait
  * deux ou trois fois sur « Une autre ! ». Chaque clic lancerait un tirage
- * concurrent, et le dernier arrivé écraserait l'affichage du précédent — sans
+ * concurrent, et le dernier arrivé écraserait l'affichage du précédent, sans
  * compter les appels payés pour rien. Retirer les boutons rend la chose
  * impossible plutôt que simplement déconseillée.
  */
@@ -518,7 +518,7 @@ function aideScreen(progress) {
           '`1.` Va sur **https://account.battle.net/privacy** (connecte-toi)\n' +
           '`2.` Descends jusqu\'à **Confidentialité des données de jeu et du profil**\n' +
           '`3.` Coche **Partager mes données de jeu avec les développeurs communautaires**\n' +
-          '`4.` Enregistre, puis relance `/que-faire` — le changement est pris en compte ' +
+          '`4.` Enregistre, puis relance `/que-faire` : le changement est pris en compte ' +
           'dans les minutes qui suivent',
         inline: false,
       },
@@ -538,7 +538,7 @@ function aideScreen(progress) {
         inline: false,
       },
     )
-    .setFooter({ text: 'Je ne lis que des données publiques de personnage — jamais ton compte Battle.net.' });
+    .setFooter({ text: 'Je ne lis que des données publiques de personnage, jamais ton compte Battle.net.' });
 
   return { embeds: [embed], flags: MessageFlags.Ephemeral };
 }
@@ -560,7 +560,7 @@ module.exports = {
 
     // Le vocal est relevé une fois, au lancement : c'est la photo du groupe au
     // moment où quelqu'un se demande quoi faire. Les profils, eux, ne sont
-    // chargés que si une activité de groupe sort — inutile de sonder cinq
+    // chargés que si une activité de groupe sort : inutile de sonder cinq
     // personnages pour une soirée transmog en solo.
     const compagnons = compagnonsEnVocal(interaction);
     let groupe = null;
@@ -574,7 +574,7 @@ module.exports = {
     };
 
     // Dernier écran d'activité affiché. Un objectif n'est enregistré que si le
-    // joueur clique « Je le prends » — le tirage seul n'engage à rien. Comme
+    // joueur clique « Je le prends » : le tirage seul n'engage à rien. Comme
     // l'objectif est bien trop gros pour tenir dans un customId (100 caractères),
     // on le garde ici, dans la portée de la commande : seul son auteur pilote
     // ces boutons, et un seul écran est vivant à la fois.
@@ -617,7 +617,7 @@ module.exports = {
       // Un écran sans bloc d'objectif est indiscernable d'un bot resté sur
       // l'ancienne version : on dit toujours pourquoi il manque.
       if (!bloc && brute.objectif) {
-        console.log(`[que-faire] ${brute.id} : pas d'objectif — ` +
+        console.log(`[que-faire] ${brute.id} : pas d'objectif, ` +
           (!progress?.ok ? `profil illisible (${progress?.raison})`
            : dejaFait   ? 'activité déjà accomplie'
            : 'aucune cible trouvée par le résolveur'));
@@ -634,7 +634,7 @@ module.exports = {
      * La quête s'ajoute au journal, elle ne remplace plus rien : on peut mener
      * plusieurs chantiers de front, et c'est le plafond du journal qui dit stop.
      * Un refus n'est donc pas une erreur mais une information, et il faut qu'il
-     * dise où aller — sans quoi le joueur reclique sur un bouton qui ne fera
+     * dise où aller, sans quoi le joueur reclique sur un bouton qui ne fera
      * rien de plus la deuxième fois.
      *
      * Un objectif de groupe engage le meneur : c'est lui qui a lancé la
@@ -644,7 +644,7 @@ module.exports = {
     const prendreObjectif = async (i) => {
       if (!dernier) {
         return i.reply({
-          content: '🎲 Cet objectif n\'est plus affiché — relance un tirage pour en prendre un.',
+          content: '🎲 Cet objectif n\'est plus affiché. Relance un tirage pour en prendre un.',
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -669,7 +669,7 @@ module.exports = {
         : 'journal plein';
 
       await i.followUp({
-        content: `📓 Quête ajoutée à ton journal — **${resultat.total}** en cours, ${places}. `
+        content: `📓 Quête ajoutée à ton journal · **${resultat.total}** en cours, ${places}. `
                + '`/journal` pour les revoir ou en abandonner une.',
         flags: MessageFlags.Ephemeral,
       });
@@ -679,7 +679,7 @@ module.exports = {
       // Seul l'auteur de la commande pilote sa propre proposition
       if (i.user.id !== interaction.user.id) {
         return i.reply({
-          content: '🚫 Cette proposition n\'est pas la tienne — lance ta propre `/que-faire` !',
+          content: '🚫 Cette proposition n\'est pas la tienne. Lance ta propre `/que-faire` !',
           flags: MessageFlags.Ephemeral,
         });
       }

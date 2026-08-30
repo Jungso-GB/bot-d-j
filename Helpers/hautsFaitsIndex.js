@@ -9,7 +9,7 @@
  * inverse : quels hauts faits appartiennent à quelle catégorie.
  *
  * Blizzard la donne, mais éclatée sur 170 catégories imbriquées, à raison d'un
- * appel chacune. C'est trop pour un tirage — d'où cet index construit une fois,
+ * appel chacune. C'est trop pour un tirage, d'où cet index construit une fois,
  * posé sur disque, et rafraîchi avec la veille saison.
  *
  * Les 16 catégories racines couvrent tout le jeu :
@@ -135,7 +135,7 @@ async function assurer(settings) {
 
 /**
  * Filtre des identifiants de hauts faits sur une liste de catégories.
- * Sans index ou sans catégorie demandée, on ne filtre pas — mieux vaut un
+ * Sans index ou sans catégorie demandée, on ne filtre pas : mieux vaut un
  * objectif hors thème qu'aucun objectif.
  *
  * @param {object} settings
@@ -172,7 +172,7 @@ async function definition(settings, achievementId) {
     // Un succès est définitif : ces données ne bougent qu'aux patchs.
     if (enCache.def) return enCache.def;
     // Un échec ne l'est pas. Une coupure réseau ou un 429 passager suffirait
-    // sinon à priver le bot de ce haut fait jusqu'au prochain redémarrage —
+    // sinon à priver le bot de ce haut fait jusqu'au prochain redémarrage,
     // et si le coup de chaud touche toute une rafale d'appels, c'est le
     // système d'objectifs entier qui reste muet sans qu'on comprenne pourquoi.
     if (Date.now() < enCache.reessayerApres) return null;

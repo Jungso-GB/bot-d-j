@@ -27,7 +27,7 @@ async function fetchAvatar(name, realm, region = 'eu') {
 
     const data = await res.json();
     if (!data.thumbnail_url) return null;
-    // Remplace -avatar.jpg (84×84) par -inset.jpg (230×116) — fiable sur le CDN Blizzard
+    // Remplace -avatar.jpg (84×84) par -inset.jpg (230×116), fiable sur le CDN Blizzard
     return data.thumbnail_url.replace(/-avatar\.jpg(\?|$)/, '-inset.jpg$1');
 
   } catch (err) {

@@ -10,7 +10,7 @@
  * Le flux client_credentials suffit pour tout ce qu'on lit ici, y compris les
  * profils de personnages : aucun membre n'a besoin de se connecter à Battle.net.
  * Seul le réglage « Données de jeu et confidentialité du profil » du joueur peut
- * fermer la porte, et il répond alors 403 — voir lireProfil().
+ * fermer la porte, et il répond alors 403 (voir lireProfil()).
  */
 
 const TIMEOUT_MS = 15000;

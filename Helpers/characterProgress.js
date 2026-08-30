@@ -5,13 +5,13 @@ const fs = require('fs');
 const { blizzardGet, BlizzardError } = require('./blizzardApi');
 
 /**
- * Progression d'un membre, pour ne pas lui proposer ce qu'il a déjà fait — et
+ * Progression d'un membre, pour ne pas lui proposer ce qu'il a déjà fait, et
  * surtout pour savoir ce qu'il lui reste à faire, nommément.
  *
  * Le lien Discord → personnage vient de members.json, qui porte déjà un
  * discordId à côté du nom et du royaume : rien à demander aux membres.
  *
- * Tout passe par le token applicatif — aucune connexion Battle.net requise.
+ * Tout passe par le token applicatif : aucune connexion Battle.net requise.
  * Deux cas ferment la porte, et tous deux sont traités comme « on ne sait pas » :
  *   403 → le joueur a activé la confidentialité de son profil. C'est son choix,
  *         on ne le contourne pas ; /que-faire lui explique comment l'ouvrir s'il
@@ -25,7 +25,7 @@ const { blizzardGet, BlizzardError } = require('./blizzardApi');
  * Le volet hauts faits pèse ~2 000 entrées, chacune traînant son arbre de
  * critères. Multiplié par un roster entier gardé six heures en cache, ça
  * devient lourd pour rien. On en extrait donc à la lecture la seule forme utile
- * — quels critères manquent, sous forme d'identifiants — et on jette le brut.
+ * (quels critères manquent, sous forme d'identifiants) et on jette le brut.
  */
 
 // Un profil ne bouge pas assez vite pour justifier mieux
@@ -36,8 +36,8 @@ const TTL_MS = 6 * 60 * 60 * 1000;
  *
  * Six heures sur un échec, c'est six heures de `/que-faire` sans objectif pour
  * une panne d'API de trente secondes. C'est aussi ce qui rendait fausse la
- * promesse faite à l'écran d'aide — « relance la commande, le changement est
- * pris en compte dans les minutes qui suivent » — puisqu'un joueur qui venait
+ * promesse faite à l'écran d'aide (« relance la commande, le changement est
+ * pris en compte dans les minutes qui suivent »), puisqu'un joueur qui venait
  * d'ouvrir son profil restait bloqué sur le refus mis en cache.
  */
 const TTL_ECHEC_MS = 10 * 60 * 1000;
@@ -153,7 +153,7 @@ async function chargerProgression(settings, membre) {
 
   // Le volet hauts faits est le socle de tout : sans lui, on ne sait ni ce qui
   // est fait, ni ce qui manque. Le déclarer « lu » alors qu'il est vide donne
-  // un profil qui se prétend exploitable et ne contient rien — l'écran affiche
+  // un profil qui se prétend exploitable et ne contient rien : l'écran affiche
   // alors l'activité nue, instantanément, sans que rien ne signale la panne.
   //
   // On distingue les trois refus, parce qu'ils n'appellent pas la même réponse :
@@ -184,7 +184,7 @@ async function chargerProgression(settings, membre) {
     personnage: `${membre.name}-${membre.realm}`,
     discordId: membre.discordId,
 
-    // Ce qui est acquis — sert au filtrage « déjà fait »
+    // Ce qui est acquis, sert au filtrage « déjà fait »
     hautsFaits: hf?.achievements ? obtenus : null,
     quetes:     quetes?.quests ? new Set(quetes.quests.map(q => q.id)) : null,
     montures:   montures?.mounts?.length ?? null,
@@ -200,7 +200,7 @@ async function chargerProgression(settings, membre) {
     classe: fiche?.character_class?.name ?? null,
     spe:    fiche?.active_spec?.name ?? null,
 
-    // Ce qui manque — sert à bâtir un objectif nominatif
+    // Ce qui manque, sert à bâtir un objectif nominatif
     candidats,
     monturesIds:  montures?.mounts ? new Set(montures.mounts.map(m => m.mount?.id).filter(Boolean)) : null,
     mascottesIds: mascottes?.pets  ? new Set(mascottes.pets.map(p => p.species?.id).filter(Boolean)) : null,
@@ -244,7 +244,7 @@ async function progressionDe(settings, discordId, options = {}) {
     progress = { ok: false, raison: 'erreur', discordId };
   }
 
-  // On met même les refus en cache — inutile de retaper toutes les 5 secondes —
+  // On met même les refus en cache (inutile de retaper toutes les 5 secondes),
   // mais bien moins longtemps : un échec doit pouvoir se réparer dans la séance.
   cache.set(cle, {
     progress,

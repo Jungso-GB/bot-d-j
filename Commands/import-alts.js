@@ -165,7 +165,7 @@ module.exports = {
       const channel = bot.channels.cache.get(bot.settings.backupChannelId);
       if (channel) {
         await channel.send({
-          content: `🗂️ **Import ALTs** — \`${result.guildKey}\` — ${result.totalRelationships} personnages liés, ${result.totalMains} mains — <t:${Math.floor(Date.now() / 1000)}:F>`,
+          content: `🗂️ **Import ALTs** · \`${result.guildKey}\` · ${result.totalRelationships} personnages liés, ${result.totalMains} mains · <t:${Math.floor(Date.now() / 1000)}:F>`,
           files: [
             new AttachmentBuilder(
               Buffer.from(JSON.stringify(result, null, 2)),

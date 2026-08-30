@@ -25,7 +25,7 @@ async function backupMembers(bot, filePath, action, memberName) {
     const ts    = `<t:${Math.floor(Date.now() / 1000)}:F>`;
 
     await channel.send({
-      content: `🗂️ **Backup membres** — ${action} de **${memberName}** — ${count} membre(s) au total — ${ts}`,
+      content: `🗂️ **Backup membres** · ${action} de **${memberName}** · ${count} membre(s) au total · ${ts}`,
       files: [file],
     });
 

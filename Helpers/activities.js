@@ -10,7 +10,7 @@
  * D'où 6 cases à remplir : ACTIVITIES[mode][section].
  *
  * Format d'une activité :
- *   id      identifiant unique (kebab-case) — sert à éviter la répétition au re-roll
+ *   id      identifiant unique (kebab-case), sert à éviter la répétition au re-roll
  *   titre   nom court affiché en titre d'embed
  *   resume  1 à 3 phrases qui donnent envie
  *   duree   estimation lisible ('1 à 2 h', '3 soirées', '4 à 6 semaines'…)
@@ -40,8 +40,8 @@
  *   15076 Guilde · 15117 Combats de mascottes · 15234 Héritage
  *   15246 Collections · 15301 Contenu d'extension · 15522 Gouffres · 15606 Logis
  *
- * Le champ est techniquement facultatif — une activité sans `objectif` s'affiche
- * telle quelle — mais les 84 en portent un. Une activité qui répond « débrouille-
+ * Le champ est techniquement facultatif : une activité sans `objectif` s'affiche
+ * telle quelle. Mais les 84 en portent un. Une activité qui répond « débrouille-
  * toi » n'a pas sa place ici : c'est précisément ce que /que-faire est censé
  * éviter.
  *
@@ -266,7 +266,7 @@ const ACTIVITIES = {
         objectif: { type: 'reputation' },
         fait: { achievement: 521 },
         titre: 'Exalté avec une faction',
-        resume: 'On choisit une faction — ancienne ou actuelle — et on la pousse jusqu\'au dernier palier pour la récompense au bout.',
+        resume: 'On choisit une faction, ancienne ou actuelle, et on la pousse jusqu\'au dernier palier pour la récompense au bout.',
         duree: '3 à 7 jours',
         gain: 'Monture, tabard, recettes ou mascotte selon la faction',
         astuce: 'Vérifiez d\'abord la récompense finale, certaines factions ne valent pas le trajet.',
@@ -351,7 +351,7 @@ const ACTIVITIES = {
         resume: 'Il reste {{joursRestants}} jours à {{saison}} : on solde ce qui va disparaître et on met de côté matériaux et or pour le redémarrage.',
         duree: '3 à 5 jours',
         gain: 'Un départ de saison sans course-poursuite',
-        astuce: 'Les récompenses de saison partent avec la saison — vérifiez la liste avant qu\'il soit trop tard.',
+        astuce: 'Les récompenses de saison partent avec la saison : vérifiez la liste avant qu\'il soit trop tard.',
       },
       {
         id: 'solo-collection-tabards',
@@ -484,7 +484,7 @@ const ACTIVITIES = {
         resume: 'Un objectif d\'or à sept chiffres, atteint par le commerce, le craft et la patience. Un vrai métier parallèle.',
         duree: '2 à 6 mois',
         gain: 'Le haut fait, et le luxe de ne plus jamais compter',
-        astuce: 'Spécialisez-vous sur un marché unique — l\'éparpillement est ce qui fait perdre de l\'or.',
+        astuce: 'Spécialisez-vous sur un marché unique : l\'éparpillement est ce qui fait perdre de l\'or.',
       },
       {
         id: 'solo-tous-les-titres-extension',
@@ -893,9 +893,9 @@ const ACTIVITIES = {
  *
  *   {{donjon}}          un donjon de la rotation, tiré au sort
  *   {{donjon2}}         un second donjon, différent du premier
- *   {{chrono}}          le chrono de {{donjon}} — « 28 minutes »
+ *   {{chrono}}          le chrono de {{donjon}}, « 28 minutes »
  *   {{tousLesDonjons}}  « les 8 donjons » de la rotation
- *   {{saison}}          « Midnight — Saison 1 »
+ *   {{saison}}          « Midnight · Saison 1 »
  *   {{extension}}       « Midnight »
  *   {{affixes}}         les affixes de la semaine
  *   {{joursRestants}}   jours avant la fin de la saison
@@ -990,7 +990,7 @@ function renderActivity(activity, live) {
  * Les identifiants de hauts faits ne se devinent pas : chacun de ceux présents
  * dans ce fichier a été relevé dans l'export wago.tools puis confirmé contre
  * /data/wow/achievement/{id} de l'API officielle. Pour en ajouter, refaire ce
- * chemin — un identifiant inventé filtrerait silencieusement une activité.
+ * chemin : un identifiant inventé filtrerait silencieusement une activité.
  *
  * Règle de sûreté : dans le doute, on ne filtre pas. Une donnée absente (profil
  * privé, appel en échec) vaut « pas fait », jamais « fait ».
@@ -1039,7 +1039,7 @@ function getActivities(modeId, sectionId) {
  * Tire une activité au hasard dans une case.
  *
  * Par défaut, ce que le joueur a déjà accompli est écarté du tirage. Si tout est
- * fait — ou si `inclureFaits` est demandé — on repioche dans la liste complète
+ * fait (ou si `inclureFaits` est demandé), on repioche dans la liste complète
  * plutôt que de ne rien renvoyer : mieux vaut une redite qu'un écran vide.
  *
  * @param {string} modeId      'solo' | 'groupe'

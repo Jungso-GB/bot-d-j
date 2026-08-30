@@ -10,17 +10,17 @@ const path = require('path');
  *
  * Appelé une fois par jour depuis bot.js.
  *
- * @param {object} settings  – bot.settings
+ * @param {object} settings  bot.settings
  */
 async function fetchRaidHelperEvents(settings) {
   const { raidHelperApiKey, raidHelperServerId, eventsFilePath } = settings;
 
   if (!raidHelperApiKey) {
-    console.warn('[fetchRaidHelperEvents] RAID_HELPER_API_KEY non défini — import ignoré');
+    console.warn('[fetchRaidHelperEvents] RAID_HELPER_API_KEY non défini, import ignoré');
     return;
   }
   if (!raidHelperServerId) {
-    console.warn('[fetchRaidHelperEvents] RAID_HELPER_SERVER_ID non défini — import ignoré');
+    console.warn('[fetchRaidHelperEvents] RAID_HELPER_SERVER_ID non défini, import ignoré');
     return;
   }
 
@@ -54,7 +54,7 @@ async function fetchRaidHelperEvents(settings) {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      console.error(`[fetchRaidHelperEvents] Erreur HTTP ${res.status} — ${body}`);
+      console.error(`[fetchRaidHelperEvents] Erreur HTTP ${res.status} : ${body}`);
       // On continue avec les events en cache uniquement
     } else {
       const data = await res.json();

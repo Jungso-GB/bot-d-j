@@ -48,7 +48,7 @@ module.exports = {
   // joueur et en déduit une cible nominative (« il te manque Griseveille »).
   //
   // Les faits viennent toujours de l'API Blizzard. OpenRouter n'intervient que
-  // pour rédiger la marche à suivre autour de ces faits — il n'a jamais le droit
+  // pour rédiger la marche à suivre autour de ces faits : il n'a jamais le droit
   // de choisir la cible. Sans clé, le rendu bascule sur des gabarits : la
   // fonctionnalité reste entière, elle perd juste le confort de lecture.
   openrouter: {
@@ -64,7 +64,7 @@ module.exports = {
   // Format d'intervalle (heures) et non de créneau hebdomadaire : une quête
   // bouclée en début de soirée doit être félicitée dans la soirée, pas le
   // lendemain matin. Le coût est nul quand personne n'a de quête ouverte, et
-  // d'un appel de profil par membre concerné sinon — Blizzard est large.
+  // d'un appel de profil par membre concerné sinon. Blizzard est large.
   objectifsSchedule: {
     heures: 2,
     minute: 0,
@@ -94,7 +94,7 @@ module.exports = {
     fuseau: 'Europe/Paris',
   },
 
-  // Clé API Raid Helper — variable d'env RAID_HELPER_API_KEY (prioritaire) ou fallback
+  // Clé API Raid Helper : variable d'env RAID_HELPER_API_KEY (prioritaire) ou fallback
   raidHelperApiKey:   process.env.RAID_HELPER_API_KEY   || 'ZFJb5zIm5ckB7V3APsuVH0FY0K3kGfXg57vwj8Rz',
   // ID serveur Discord pour Raid Helper (variable d'env ou celui du serveur)
   raidHelperServerId: process.env.RAID_HELPER_SERVER_ID || '1432474143252811861',

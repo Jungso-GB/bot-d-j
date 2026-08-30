@@ -16,8 +16,8 @@ function normalize(name) {
  *  - Les relations Main/ALT
  *  - Les infos de base (joinDate, invitedBy) par personnage
  *
- * @param {object} grmData  – JSON parsé du fichier GRM
- * @param {string} [guildKey] – Clé de la guilde ; auto-détectée si absent
+ * @param {object} grmData  JSON parsé du fichier GRM
+ * @param {string} [guildKey] Clé de la guilde ; auto-détectée si absent
  * @returns {object} { updatedAt, guildKey, totalRelationships, totalMains, relations, altOf, characters }
  */
 function parseGrmLog(grmData, guildKey) {

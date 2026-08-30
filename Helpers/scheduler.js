@@ -5,7 +5,7 @@
  *
  * setInterval(24 h) dérive : la tâche se cale sur l'heure de démarrage du bot,
  * et un redéploiement à 3 h du matin la fixe à 3 h du matin. Ici on vise une
- * heure murale, recalculée après chaque exécution — un redémarrage ne décale
+ * heure murale, recalculée après chaque exécution : un redémarrage ne décale
  * plus rien, et le changement d'heure est absorbé au passage suivant.
  *
  * Pas de dépendance : le calcul du prochain créneau passe par Intl, qui sait
@@ -36,7 +36,7 @@ function maintenantDans(timeZone) {
   );
 
   const index = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[parts.weekday];
-  // Intl rend « 24 » pour minuit en hour12:false — à ramener à 0
+  // Intl rend « 24 » pour minuit en hour12:false, à ramener à 0
   const heure = Number(parts.hour) % 24;
 
   return { jour: index, minutesDepuisMinuit: heure * 60 + Number(parts.minute) };
@@ -69,7 +69,7 @@ function delaiJusquAuProchain(jours, heure, minute, timeZone) {
 /**
  * Délai en millisecondes jusqu'au prochain créneau d'un cycle intra-journalier.
  *
- * Les créneaux sont calés sur l'horloge murale — 00h00, 02h00, 04h00… — et non
+ * Les créneaux sont calés sur l'horloge murale (00h00, 02h00, 04h00…) et non
  * sur l'heure de démarrage du bot. C'est la même raison que pour la version
  * hebdomadaire : un redéploiement à 3h17 ne doit pas condamner la tâche à
  * tourner à 17 de chaque heure paire pour le reste de sa vie.
@@ -193,7 +193,7 @@ function libelleSchedule(config) {
   const hh = String(heure).padStart(2, '0');
   const mm = String(minute).padStart(2, '0');
 
-  // Les sept jours cochés, c'est une tâche quotidienne — l'énumérer donnerait
+  // Les sept jours cochés, c'est une tâche quotidienne : l'énumérer donnerait
   // « chaque dimanche et lundi et mardi et… », que personne ne veut lire.
   const noms = jours.length >= 7
     ? 'jour'

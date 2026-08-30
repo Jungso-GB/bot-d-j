@@ -66,7 +66,7 @@ async function saisonActive(expansionIdMin) {
 }
 
 /**
- * « MN1 (Full) » + « Midnight » → « Midnight — Saison 1 ».
+ * « MN1 (Full) » + « Midnight » → « Midnight · Saison 1 ».
  * Les libellés Raider.io traînent des suffixes techniques (« • Full », « (Full) ») :
  * on ne garde que le numéro, d'où qu'il vienne.
  */
@@ -74,7 +74,7 @@ function libelleSaison(saison, extension) {
   const numero = (saison.short_name || '').match(/(\d+)/)?.[1]
               || (saison.name || '').match(/season\s*(\d+)/i)?.[1];
   const base   = extension?.name || 'World of Warcraft';
-  return numero ? `${base} — Saison ${numero}` : `${base} — ${saison.name}`;
+  return numero ? `${base} · Saison ${numero}` : `${base} · ${saison.name}`;
 }
 
 function lireFichier(filePath) {
@@ -88,7 +88,7 @@ function lireFichier(filePath) {
 
 /**
  * Rafraîchit la veille et écrit le fichier.
- * @param {object} settings – objet settings du bot
+ * @param {object} settings  objet settings du bot
  * @returns {Promise<{data: object|null, changed: boolean, previous: object|null}>}
  */
 async function fetchWowSeason(settings) {
@@ -96,7 +96,7 @@ async function fetchWowSeason(settings) {
   const previous = lireFichier(filePath);
 
   try {
-    // 1. Noms français (Blizzard) — indexés par challenge_mode_id
+    // 1. Noms français (Blizzard), indexés par challenge_mode_id
     const [donjonsBz, extensionsBz] = await Promise.all([
       blizzardGet(settings, '/data/wow/mythic-keystone/dungeon/index', 'dynamic'),
       blizzardGet(settings, '/data/wow/journal-expansion/index', 'static'),
@@ -163,7 +163,7 @@ async function fetchWowSeason(settings) {
     );
 
     console.log(
-      `[wow-season] ${data.expansion?.name} · ${data.season.label} — ` +
+      `[wow-season] ${data.expansion?.name} · ${data.season.label} · ` +
       `${dungeons.length} donjons (${traduits} en FR), fin dans ${data.season.daysLeft} j` +
       (changed ? ' ⚠️ CHANGEMENT DÉTECTÉ' : '')
     );
@@ -172,7 +172,7 @@ async function fetchWowSeason(settings) {
 
   } catch (err) {
     console.warn(`[wow-season] Rafraîchissement échoué : ${err.message}` +
-      (previous ? ' — données précédentes conservées' : ''));
+      (previous ? ' · données précédentes conservées' : ''));
     return { data: previous, changed: false, previous };
   }
 }

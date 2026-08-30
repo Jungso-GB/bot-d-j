@@ -48,7 +48,7 @@ async function syncRanks(bot) {
     try {
       guildMember = await guild.members.fetch(member.discordId);
     } catch {
-      // Membre a peut-être quitté le serveur — on ne touche pas à son grade
+      // Membre a peut-être quitté le serveur, on ne touche pas à son grade
       continue;
     }
 

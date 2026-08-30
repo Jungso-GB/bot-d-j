@@ -6,7 +6,7 @@
  * ── Ce que l'IA a le droit de faire ───────────────────────────────────
  * Reformuler des faits déjà établis et y ajouter le « comment s'y rendre » :
  * par où passer, quel portail prendre, dans quel ordre s'y mettre. C'est la
- * seule chose que l'API Blizzard ne sait pas dire — elle donne « Griseveille »
+ * seule chose que l'API Blizzard ne sait pas dire : elle donne « Griseveille »
  * mais jamais « au nord-ouest de Tornheim ».
  *
  * ── Ce qu'elle n'a pas le droit de faire ──────────────────────────────
@@ -14,7 +14,7 @@
  * risque de fabulation est réel : l'extension en cours est plus récente que
  * l'entraînement de la plupart des modèles, et un modèle qui ne sait pas invente
  * volontiers un nom de rare et des coordonnées. La consigne lui demande donc
- * explicitement de rester vague quand il n'est pas sûr — un « cherche du côté du
+ * explicitement de rester vague quand il n'est pas sûr : un « cherche du côté du
  * nord de la zone » est utile, un faux nom de PNJ envoie le joueur dans le mur.
  *
  * ── Sans clé ──────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ const URL = 'https://openrouter.ai/api/v1/chat/completions';
  * Le modèle par défaut raisonne avant d'écrire, et ces jetons de raisonnement
  * sont facturés sur le même compteur que la réponse. Avec un plafond serré,
  * la réflexion consomme tout et la réponse revient vide (`finish_reason:
- * "length"`) — un échec silencieux qui ressemble à une panne d'API.
+ * "length"`), un échec silencieux qui ressemble à une panne d'API.
  *
  * On coupe donc le raisonnement, qui n'apporte rien à une reformulation de
  * faits déjà établis : mesuré sur deepseek-v4-flash, ça descend de 12 s à 4 s
@@ -89,12 +89,12 @@ RÈGLES ABSOLUES
    l'autre, ne reprends pas toujours la même, et garde-la affectueuse : on
    taquine un compagnon de guilde, on ne le méprise pas.
 
-FORMAT DE RÉPONSE — un objet JSON, rien d'autre, sans balises de code :
+FORMAT DE RÉPONSE (un objet JSON, rien d'autre, sans balises de code) :
 {"accroche": "l'interpellation puis UNE phrase courte qui donne envie de s'y mettre",
  "etapes": ["étape courte et actionnable", "…"]}
 
 L'accroche fait 20 mots au maximum, interpellation comprise. Elle donne le ton,
-elle ne résume pas l'objectif ni ne recopie les étapes — celles-ci disent déjà
+elle ne résume pas l'objectif ni ne recopie les étapes : celles-ci disent déjà
 tout. Une accroche trop longue est coupée à l'affichage.
 
 Entre 2 et 4 étapes. Chaque étape tient en une ligne. C'est là que va l'utile :
@@ -127,7 +127,7 @@ function extraireJson(brut) {
   }
 }
 
-/** Les faits transmis au modèle — rien de plus que ce qu'on a vérifié. */
+/** Les faits transmis au modèle, rien de plus que ce qu'on a vérifié. */
 function dossier(objectif, activity, live) {
   return {
     activite:        activity.titre,
@@ -164,7 +164,7 @@ async function tenter(settings, objectif, activity, live) {
         model,
         temperature: 0.7,
         max_tokens: SORTIE_MAX_TOKENS,
-        // Ignoré par les modèles qui ne raisonnent pas — voir SORTIE_MAX_TOKENS
+        // Ignoré par les modèles qui ne raisonnent pas (voir SORTIE_MAX_TOKENS)
         reasoning: { enabled: false },
         messages: [
           { role: 'system', content: CONSIGNE },
@@ -220,8 +220,8 @@ async function tenter(settings, objectif, activity, live) {
 /**
  * Rédige l'accroche et les étapes d'un objectif.
  *
- * Une tentative sur huit revient inexploitable — hoquet du fournisseur, réponse
- * hors format — alors que la même demande passe au coup suivant. Comme l'écran
+ * Une tentative sur huit revient inexploitable (hoquet du fournisseur, réponse
+ * hors format) alors que la même demande passe au coup suivant. Comme l'écran
  * est déjà différé côté Discord, une reprise unique coûte quelques secondes au
  * pire et évite de dégrader l'affichage pour un aléa réseau. Au-delà d'une
  * reprise, on préfère les faits bruts à un joueur qui attend.

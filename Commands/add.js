@@ -132,7 +132,7 @@ module.exports = {
 
     const avatarInfo = avatar
       ? '✅ Avatar récupéré automatiquement.'
-      : '⚠️ Avatar introuvable sur Raider.io — initiales affichées. Utilise `/refresh-avatars` après enregistrement du personnage.';
+      : '⚠️ Avatar introuvable sur Raider.io, initiales affichées. Utilise `/refresh-avatars` après enregistrement du personnage.';
 
     return interaction.followUp({
       content: `✅ **${pseudo}** (\`${discordUser.username}\`) ajouté sur *${realm}*. Rang : ${bot.settings.defaultRank}.\n${avatarInfo}\n💡 Les rôles et métiers seront synchronisés automatiquement depuis les réactions Discord.`,

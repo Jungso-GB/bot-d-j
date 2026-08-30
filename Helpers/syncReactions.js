@@ -125,7 +125,7 @@ async function handleReactionChange(bot, reaction, user, action) {
     } else if (action === 'remove') {
       m.roles = m.roles.filter(r => r !== role);
     }
-    console.log(`[reactions] ${user.username} — rôles : ${m.roles.join(', ') || 'aucun'}`);
+    console.log(`[reactions] ${user.username} · rôles : ${m.roles.join(', ') || 'aucun'}`);
   }
 
   if (isProf) {
@@ -139,7 +139,7 @@ async function handleReactionChange(bot, reaction, user, action) {
     } else if (action === 'remove') {
       m.professions = m.professions.filter(p => p !== prof);
     }
-    console.log(`[reactions] ${user.username} — métiers : ${m.professions.join(', ') || 'aucun'}`);
+    console.log(`[reactions] ${user.username} · métiers : ${m.professions.join(', ') || 'aucun'}`);
   }
 
   fs.writeFileSync(filePath, JSON.stringify(members, null, 2), 'utf8');

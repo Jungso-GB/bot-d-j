@@ -12,8 +12,8 @@
  * et un objectif qu'on n'a pas choisi n'a aucune valeur.
  *
  * Un membre peut mener plusieurs quêtes de front, dans la limite de
- * `JOURNAL_MAX`. Le plafond n'est pas là pour économiser quoi que ce soit — la
- * passe quotidienne lit **un profil par membre**, pas un par quête, et tester
+ * `JOURNAL_MAX`. Le plafond n'est pas là pour économiser quoi que ce soit : la
+ * passe lit **un profil par membre**, pas un par quête, et tester
  * cinq preuves sur le même profil est gratuit. Il est là parce qu'un journal
  * qu'on ne peut plus lire d'un coup d'œil cesse d'être un journal, et parce
  * qu'une quête qu'on a oublié avoir prise ne motive personne.
@@ -30,7 +30,7 @@
  * La passe relit les profils **sans passer par le cache** : un cache de six
  * heures suffit pour un tirage, pas pour constater un exploit.
  *
- * Elle tourne toutes les deux heures — voir `objectifsSchedule`. Le délai réel
+ * Elle tourne toutes les deux heures (voir `objectifsSchedule`). Le délai réel
  * entre l'exploit et la félicitation reste plus long que ça, et ce n'est pas de
  * notre fait : Blizzard ne republie la fiche d'un personnage qu'après sa
  * déconnexion, et prend son temps pour le faire. D'où les vingt-quatre heures
@@ -69,7 +69,7 @@ function nouvelId(existants) {
  *
  * Deux réparations silencieuses au passage. Le suivi n'a longtemps gardé qu'une
  * quête par membre, rangée directement sous son identifiant : ces entrées-là
- * sont réenveloppées dans un tableau plutôt que jetées — quelqu'un a cliqué
+ * sont réenveloppées dans un tableau plutôt que jetées : quelqu'un a cliqué
  * « Je le prends » pour de bon, ce n'est pas à nous de l'oublier. Et celles qui
  * n'ont pas d'identifiant en reçoivent un, sans quoi aucun bouton ne pourrait
  * les désigner.
@@ -134,7 +134,7 @@ function ecrire(settings, data) {
 /**
  * Ajoute une quête au journal d'un membre.
  *
- * On garde ce qui sert à vérifier et à raconter — pas la prose de l'IA, qui
+ * On garde ce qui sert à vérifier et à raconter, pas la prose de l'IA, qui
  * sera de toute façon régénérée. La fiche Wowhead, elle, fait partie du lot :
  * l'annonce tombe des semaines plus tard, dans un autre salon, et le résolveur
  * qui savait la construire n'est plus dans le décor à ce moment-là.
@@ -247,7 +247,7 @@ function classement(settings) {
 /**
  * La preuve est-elle tenue au vu de la progression fraîchement relue ?
  *
- * Dans le doute — donnée absente, profil devenu privé — on répond non. Une
+ * Dans le doute (donnée absente, profil devenu privé), on répond non. Une
  * félicitation à tort se remarque bien plus qu'une félicitation en retard.
  */
 function preuveTenue(preuve, progress) {
@@ -300,7 +300,7 @@ function perime(entree) {
  *
  * Les quêtes prises avant l'arrivée des liens n'en ont pas, et il en traîne
  * dans le fichier pour des semaines : elles s'affichent alors exactement comme
- * avant, en gras. Une quête dont la cible n'a pas de fiche — l'équipement —
+ * avant, en gras. Une quête dont la cible n'a pas de fiche, l'équipement,
  * passe par le même chemin.
  */
 function nomCible(entree) {
