@@ -60,12 +60,14 @@ module.exports = {
   // Laisser vide ('') pour désactiver l'annonce.
   objectifsChannelId: process.env.OBJECTIFS_CHANNEL_ID || '1499834446642413658',
 
-  // Passe de vérification des objectifs en cours : tous les jours.
-  // Même format que veilleSchedule — jours: [0..6] = quotidien.
+  // Passe de vérification des quêtes en cours, toutes les deux heures.
+  // Format d'intervalle (heures) et non de créneau hebdomadaire : une quête
+  // bouclée en début de soirée doit être félicitée dans la soirée, pas le
+  // lendemain matin. Le coût est nul quand personne n'a de quête ouverte, et
+  // d'un appel de profil par membre concerné sinon — Blizzard est large.
   objectifsSchedule: {
-    jours:  [0, 1, 2, 3, 4, 5, 6],
-    heure:  9,
-    minute: 30,
+    heures: 2,
+    minute: 0,
     fuseau: 'Europe/Paris',
   },
 

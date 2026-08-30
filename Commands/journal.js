@@ -54,8 +54,26 @@ function anciennete(iso) {
 
 // ── Écrans ────────────────────────────────────────────────────────────
 
+/**
+ * Comment et quand une quête se valide, dit au joueur.
+ *
+ * La cadence vient du réglage et non d'un texte écrit en dur : changer
+ * `objectifsSchedule` sans changer cette phrase en ferait un mensonge. Les
+ * vingt-quatre heures, elles, ne dépendent pas de nous — c'est Blizzard qui
+ * ne republie la fiche d'un personnage qu'après sa déconnexion, et qui prend
+ * son temps. Mieux vaut l'annoncer que laisser croire à une panne.
+ */
+function commentCaSeValide(settings) {
+  const h = settings.objectifsSchedule?.heures;
+  const cadence = h ? `toutes les ${h} h` : 'régulièrement';
+
+  return `*Tu n'as rien à déclarer : je relis ton profil ${cadence} et je coche tout seul. `
+       + 'Compte jusqu\'à **24 h** entre ton exploit et la validation — Blizzard ne '
+       + 'republie ta fiche qu\'une fois déconnecté.*';
+}
+
 /** Écran 1 — la liste des quêtes en cours. */
-function journalScreen(quetes) {
+function journalScreen(quetes, settings) {
   const embed = new EmbedBuilder()
     .setColor(COULEUR)
     .setTitle('📓 Ton journal de quêtes');
@@ -70,7 +88,8 @@ function journalScreen(quetes) {
     const reste = objectifsSuivi.JOURNAL_MAX - quetes.length;
     embed.setDescription(
       `**${quetes.length}** quête${quetes.length > 1 ? 's' : ''} en cours` +
-      (reste ? ` · ${reste} place${reste > 1 ? 's' : ''} libre${reste > 1 ? 's' : ''}` : ' · journal plein')
+      (reste ? ` · ${reste} place${reste > 1 ? 's' : ''} libre${reste > 1 ? 's' : ''}` : ' · journal plein') +
+      `\n\n${commentCaSeValide(settings)}`
     );
 
     embed.addFields(quetes.map((q, n) => {
@@ -120,7 +139,7 @@ function journalScreen(quetes) {
 }
 
 /** Écran 2 — tout ce qu'on sait d'une quête. */
-function detailScreen(quete) {
+function detailScreen(quete, settings) {
   const embed = new EmbedBuilder()
     .setColor(COULEUR)
     .setAuthor({ name: '📓 Journal de quêtes' })
@@ -166,7 +185,10 @@ function detailScreen(quete) {
     embed.addFields({ name: '🧍 Suivie sur', value: quete.personnage, inline: true });
   }
 
-  embed.setFooter({ text: 'Je relis ton profil tous les jours — tu n\'as rien à déclarer' });
+  const h = settings.objectifsSchedule?.heures;
+  embed.setFooter({
+    text: `Relu ${h ? `toutes les ${h} h` : 'régulièrement'} · jusqu'à 24 h entre l'exploit et la validation`,
+  });
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
@@ -276,7 +298,7 @@ module.exports = {
 
     const mesQuetes = () => objectifsSuivi.enCours(bot.settings, interaction.user.id);
 
-    await interaction.editReply(journalScreen(mesQuetes()));
+    await interaction.editReply(journalScreen(mesQuetes(), bot.settings));
     const message = await interaction.fetchReply();
 
     // Le message n'étant visible que par son destinataire, il n'y a personne
@@ -288,7 +310,7 @@ module.exports = {
 
       try {
         if (action === 'retour') {
-          return i.update(journalScreen(mesQuetes()));
+          return i.update(journalScreen(mesQuetes(), bot.settings));
         }
 
         if (action === 'classement') {
@@ -302,19 +324,19 @@ module.exports = {
         const cible = mesQuetes().find(q => q.id === (action === 'detail' ? i.values?.[0] : cle));
 
         if (!cible) {
-          await i.update(journalScreen(mesQuetes()));
+          await i.update(journalScreen(mesQuetes(), bot.settings));
           return i.followUp({
             content: '📓 Cette quête n\'est plus dans ton journal.',
             flags: MessageFlags.Ephemeral,
           });
         }
 
-        if (action === 'detail') return i.update(detailScreen(cible));
+        if (action === 'detail') return i.update(detailScreen(cible, bot.settings));
         if (action === 'abandon') return i.update(abandonScreen(cible));
 
         if (action === 'abandon-ok') {
           objectifsSuivi.abandonner(bot.settings, interaction.user.id, cible.id);
-          await i.update(journalScreen(mesQuetes()));
+          await i.update(journalScreen(mesQuetes(), bot.settings));
           return i.followUp({
             content: `🗑️ **${cible.cible}** est sortie de ton journal.`,
             flags: MessageFlags.Ephemeral,

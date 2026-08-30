@@ -27,8 +27,15 @@
  *   { mplusDonjon: 'Repos des rois', niveauAuMoins: 8 }
  *   { ilvlAuMoins: 260 }                      niveau d'objet équipé atteint
  *
- * La passe quotidienne relit les profils **sans passer par le cache** : un cache
- * de six heures suffit pour un tirage, pas pour constater un exploit.
+ * La passe relit les profils **sans passer par le cache** : un cache de six
+ * heures suffit pour un tirage, pas pour constater un exploit.
+ *
+ * Elle tourne toutes les deux heures — voir `objectifsSchedule`. Le délai réel
+ * entre l'exploit et la félicitation reste plus long que ça, et ce n'est pas de
+ * notre fait : Blizzard ne republie la fiche d'un personnage qu'après sa
+ * déconnexion, et prend son temps pour le faire. D'où les vingt-quatre heures
+ * annoncées au joueur dans `/journal` : c'est le pire cas honnête, pas la
+ * cadence de la passe.
  */
 
 const fs = require('fs');
@@ -37,7 +44,7 @@ const path = require('path');
 const { EmbedBuilder } = require('discord.js');
 
 const { progressionDe } = require('./characterProgress');
-const { planifierHebdo, libelleSchedule } = require('./scheduler');
+const { planifierIntervalle, libelleSchedule } = require('./scheduler');
 
 // Au-delà, on considère que la quête est abandonnée et on cesse de la sonder.
 const PEREMPTION_JOURS = 90;
@@ -385,11 +392,11 @@ async function verifier(bot) {
   return valides;
 }
 
-/** Programme la passe quotidienne. */
+/** Programme la passe de vérification. */
 function planifier(bot) {
   const config = bot.settings.objectifsSchedule;
   console.log(`[objectifs] vérification ${libelleSchedule(config)}`);
-  return planifierHebdo(config, () => verifier(bot), 'objectifs');
+  return planifierIntervalle(config, () => verifier(bot), 'objectifs');
 }
 
 module.exports = {
