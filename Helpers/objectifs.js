@@ -26,6 +26,7 @@
  *     etapes          faits vérifiés à accomplir, déjà nommés
  *     recompense      ce que ça rapporte, si l'API le dit
  *     preuve          critère surveillé pour féliciter le joueur plus tard
+ *     lien            fiche Wowhead de la cible, ou null
  *     faitsAutorises  liste blanche de noms propres pour le rédacteur IA
  *   }
  *
@@ -88,6 +89,35 @@ const parmiLesMeilleurs = (liste, n = VIVIER) => auHasard(liste.slice(0, Math.ma
 
 /** Prochain palier de collection strictement au-dessus de `n`. */
 const prochainPalier = n => PALIERS.find(p => p > n) ?? null;
+
+// ── Liens Wowhead ──────────────────────────────────────────────────────
+
+/**
+ * Où envoyer le joueur qui veut en savoir plus.
+ *
+ * Wowhead accepte tels quels les identifiants de Blizzard pour les hauts faits
+ * et les factions : `/fr/achievement=2144` redirige vers la fiche française.
+ * Ce sont les deux seuls cas où l'on peut promettre la bonne page, et ce sont
+ * justement ceux qui portent l'essentiel des objectifs.
+ *
+ * Partout ailleurs, on ne devine pas d'identifiant. Les ids de montures et de
+ * mascottes de l'API Blizzard ne sont pas ceux de Wowhead, et un donjon n'a pas
+ * de fiche adressable par son `challenge_mode_id` : à ce jeu-là on tomberait
+ * sur la fiche de quelqu'un d'autre, ce qui est pire que pas de lien du tout.
+ * On se rabat donc sur une recherche ou une page de liste — toujours valides,
+ * simplement moins directes.
+ */
+const WOWHEAD = 'https://www.wowhead.com/fr';
+
+const lienHautFait  = id  => `${WOWHEAD}/achievement=${id}`;
+const lienFaction   = id  => `${WOWHEAD}/faction=${id}`;
+const lienRecherche = nom => `${WOWHEAD}/search?q=${encodeURIComponent(nom)}`;
+
+const LIENS_COLLECTION = {
+  montures:  `${WOWHEAD}/items/mounts`,
+  mascottes: `${WOWHEAD}/battle-pets`,
+  jouets:    `${WOWHEAD}/items/toys`,
+};
 
 // ── Hauts faits ────────────────────────────────────────────────────────
 
@@ -160,6 +190,7 @@ async function hautFaitCriteres(settings, progress, opts = {}) {
       reste: reste > 0 ? reste : 0,
       recompense: def.recompense,
       preuve: { achievement: choix.id },
+      lien: lienHautFait(choix.id),
       faitsAutorises: [def.name, ...etapes],
     };
   }
@@ -200,6 +231,7 @@ async function hautFaitQuantite(settings, progress, opts = {}) {
       reste: 0,
       recompense: def.recompense,
       preuve: { achievement: choix.id },
+      lien: lienHautFait(choix.id),
       faitsAutorises: [def.name],
     };
   }
@@ -277,6 +309,7 @@ async function reputation(settings, progress, opts = {}) {
       reste: 0,
       recompense: '',
       preuve: { reputation: choix.id, tierAuMoins: choix.tier + 1 },
+      lien: lienFaction(choix.id),
       faitsAutorises: [choix.nom, suivant],
     };
   }
@@ -313,6 +346,7 @@ async function reputation(settings, progress, opts = {}) {
     reste: 0,
     recompense: '',
     preuve: { reputation: choix.id, tierAuMoins: TIER_EXALTE },
+    lien: lienFaction(choix.id),
     faitsAutorises: [choix.nom, ...paliers],
   };
 }
@@ -430,6 +464,7 @@ async function collection(settings, progress, opts = {}) {
     reste: 0,
     recompense: '',
     preuve,
+    lien: LIENS_COLLECTION[quoi] || null,
     faitsAutorises: autorises,
   };
 }
@@ -468,6 +503,7 @@ async function mplusDonjon(settings, progress, opts = {}) {
       reste: 0,
       recompense: '',
       preuve: { mplusDonjon: choix.name, niveauAuMoins: 2 },
+      lien: lienRecherche(choix.name),
       faitsAutorises: [choix.name],
     };
   }
@@ -493,6 +529,7 @@ async function mplusDonjon(settings, progress, opts = {}) {
     reste: 0,
     recompense: '',
     preuve: { mplusDonjon: faible.donjon.name, niveauAuMoins: vise },
+    lien: lienRecherche(faible.donjon.name),
     faitsAutorises: [faible.donjon.name],
   };
 }
@@ -539,6 +576,8 @@ async function ilvl(settings, progress, opts = {}) {
     // différée relit le profil de celui qui a cliqué, et ici la cible porte sur
     // quelqu'un d'autre. Mieux vaut pas de bouton qu'un bouton qui ment.
     preuve: enGroupe ? null : { ilvlAuMoins: cible },
+    // Pas de fiche pour « monter de 3 ilvl » : il n'y a rien à consulter.
+    lien: null,
     faitsAutorises: qui ? [qui] : [],
   };
 }
@@ -616,6 +655,7 @@ async function groupe(settings, profils, opts = {}) {
       reste: Math.max(0, retardataire.candidat.manquants.length - etapes.length),
       recompense: def.recompense,
       preuve: { achievement: choix.id },
+      lien: lienHautFait(choix.id),
       concernes: noms,
       faitsAutorises: [def.name, ...etapes, ...noms],
     };

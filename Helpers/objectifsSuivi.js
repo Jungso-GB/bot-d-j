@@ -65,7 +65,9 @@ function ecrire(settings, data) {
 /**
  * Enregistre l'objectif qu'un membre vient de prendre.
  * On ne garde que ce qui sert à vérifier et à raconter — pas la prose de l'IA,
- * qui sera de toute façon régénérée à l'annonce.
+ * qui sera de toute façon régénérée à l'annonce. La fiche Wowhead en fait
+ * partie : l'annonce tombe des semaines plus tard, dans un autre salon, et le
+ * résolveur qui savait la construire n'est plus dans le décor à ce moment-là.
  */
 function noter(settings, discordId, objectif, activity, progress) {
   if (!objectif?.preuve) return;
@@ -79,6 +81,7 @@ function noter(settings, discordId, objectif, activity, progress) {
     progression: objectif.progression || null,
     etapes:      objectif.etapes || [],
     preuve:      objectif.preuve,
+    lien:        objectif.lien || null,
     personnage:  progress?.personnage || null,
     priseLe:     new Date().toISOString(),
   };
@@ -152,6 +155,20 @@ function perime(entree) {
 
 // ── Annonce ────────────────────────────────────────────────────────────
 
+/**
+ * Le nom de la cible, cliquable quand on connaît sa fiche.
+ *
+ * Les objectifs pris avant l'arrivée des liens n'en ont pas, et il en traîne
+ * dans le fichier pour des semaines : ils s'affichent alors exactement comme
+ * avant, en gras. Un objectif dont la cible n'a pas de fiche — l'équipement —
+ * passe par le même chemin.
+ */
+function nomCible(entree) {
+  return entree.lien
+    ? `**[${entree.cible}](${entree.lien})**`
+    : `**${entree.cible}**`;
+}
+
 function embedFelicitations(discordId, entree) {
   const jours = Math.max(1, Math.round((Date.now() - Date.parse(entree.priseLe)) / 86400000));
 
@@ -159,7 +176,7 @@ function embedFelicitations(discordId, entree) {
     .setColor(0x2ecc71)
     .setTitle('🏆 Objectif bouclé !')
     .setDescription(
-      `<@${discordId}> a terminé **${entree.cible}**.\n` +
+      `<@${discordId}> a terminé ${nomCible(entree)}.\n` +
       `Objectif pris il y a ${jours} jour${jours > 1 ? 's' : ''} sur *${entree.titreActivite}*.`
     );
 

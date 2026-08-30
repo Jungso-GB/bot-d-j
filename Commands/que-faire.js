@@ -25,10 +25,35 @@ const fetchWowSeason      = require('../Helpers/fetchWowSeason');
 const { progressionDe }   = require('../Helpers/characterProgress');
 const objectifs           = require('../Helpers/objectifs');
 const objectifsSuivi      = require('../Helpers/objectifsSuivi');
-const { rediger }         = require('../Helpers/redacteurIA');
+const { rediger, borner } = require('../Helpers/redacteurIA');
 
 // Durée pendant laquelle les boutons restent cliquables
 const TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * Ouvertures de l'écran d'accueil.
+ *
+ * Le nom de la guilde est une blague à lui tout seul : autant la servir en
+ * entrée plutôt que de la laisser dormir dans l'en-tête. Une salutation est
+ * tirée par commande et non par écran — revenir en arrière ne doit pas donner
+ * l'impression d'avoir changé d'interlocuteur en cours de route.
+ */
+const SALUTATIONS = [
+  "Bon, mon jambonneau, on va pas passer la soirée le nez dans la chope.",
+  "Alors, mon petit lardon, on cherche de l'ouvrage ?",
+  "Par ma barbe et par le jambon, te revoilà !",
+  "Tiens, de la visite à la forge. Assieds-toi, camarade.",
+  "Debout, vieille couenne ! Y a du donjon qui traîne.",
+  "Sacrebleu, un jambonneau qui s'ennuie. Ça se soigne.",
+  "Repose la chope, mon cochonnet, l'aventure attend pas.",
+  "Bien le bonjour, noble gigot !",
+  "Ah, le voilà, mon jambonneau préféré. On se met quoi sous la dent ?",
+  "Approche du feu, camarade, et dis-moi ce qui te démange.",
+  "Par ma pioche, encore un jambon en quête de gloire !",
+  "Alors comme ça on tourne en rond ? Ça tombe bien, j'ai de l'ouvrage.",
+];
+
+const salutation = () => SALUTATIONS[Math.floor(Math.random() * SALUTATIONS.length)];
 
 // customId : quefaire:<action>:<mode>:<section>:<activité>:<toutVoir>
 // Les segments inutilisés valent '-'. Le dernier segment transporte l'état du
@@ -149,6 +174,12 @@ async function construireObjectif(settings, activity, brute, progress, groupe, l
 // Limite d'un champ d'embed Discord. La dépasser fait rejeter tout le message.
 const CHAMP_MAX = 1024;
 
+// Repli quand l'IA n'a pas répondu : la description de Blizzard, qui peut faire
+// cinq lignes de prose. Elle situe, elle n'explique pas — l'utile est dans les
+// étapes juste en dessous. On la borne court plutôt que de la laisser pousser
+// les étapes hors du champ.
+const CONTEXTE_MAX = 180;
+
 /**
  * Met en forme le bloc d'objectif dans l'embed.
  *
@@ -165,6 +196,14 @@ function ajouterObjectif(embed, bloc) {
 
   const { objectif, texte } = bloc;
 
+  // Le nom de la cible passe du titre du champ à sa première ligne : les titres
+  // de champ Discord n'acceptent pas les liens, et c'est bien la cible qu'on veut
+  // rendre cliquable. Les objectifs sans fiche à consulter — l'équipement, par
+  // exemple — gardent la même ligne, simplement pas cliquable.
+  const titre = objectif.lien
+    ? `**[${objectif.cible}](${objectif.lien})**`
+    : `**${objectif.cible}**`;
+
   // Quand l'IA a pris la main, elle n'a plus cité les critères manquants tels
   // quels : on les remet en clair, ils restent l'information la plus précieuse.
   const rappelFaits = (texte?.etapes?.length && objectif.etapes?.length && objectif.type !== 'collection')
@@ -172,8 +211,10 @@ function ajouterObjectif(embed, bloc) {
       (objectif.reste ? ` *(+${objectif.reste} autres)*` : '')
     : null;
 
-  const lignes = [];
-  let budget = CHAMP_MAX - (rappelFaits ? rappelFaits.length + 2 : 0);
+  // Le titre est la seule ligne obligatoire : un objectif sans nom n'a plus
+  // d'objet. Son coût est donc prélevé d'avance, comme celui des critères.
+  const lignes = [titre];
+  let budget = CHAMP_MAX - titre.length - 1 - (rappelFaits ? rappelFaits.length + 2 : 0);
 
   const ajouter = (ligne) => {
     const cout = ligne.length + 1;
@@ -186,7 +227,7 @@ function ajouterObjectif(embed, bloc) {
   if (objectif.progression) ajouter(`*${objectif.progression}*`);
 
   if (texte?.accroche) ajouter(texte.accroche);
-  else if (objectif.contexte) ajouter(objectif.contexte);
+  else if (objectif.contexte) ajouter(borner(objectif.contexte, CONTEXTE_MAX));
 
   // Les étapes rédigées par l'IA remplacent la liste brute quand elles
   // existent : elles disent comment s'y prendre, pas seulement quoi cocher.
@@ -206,7 +247,7 @@ function ajouterObjectif(embed, bloc) {
   if (objectif.recompense) ajouter(`**Récompense :** ${objectif.recompense}`);
 
   embed.addFields({
-    name: `🎯 ${objectif.cible}`.slice(0, 256),
+    name: objectif.type === 'groupe' ? '🎯 Votre objectif' : '🎯 Ton objectif',
     value: lignes.join('\n'),
     inline: false,
   });
@@ -215,11 +256,11 @@ function ajouterObjectif(embed, bloc) {
 // ── Écrans ────────────────────────────────────────────────────────────
 
 /** Écran 1 — comment on joue : seul ou en groupe de 5. */
-function modeScreen(progress, tout, groupe) {
+function modeScreen(progress, tout, groupe, salut) {
   const embed = new EmbedBuilder()
     .setColor(0x9b59b6)
     .setTitle('🍖 Que faire aujourd\'hui ?')
-    .setDescription('D\'abord, tu joues comment ce soir ?')
+    .setDescription(`${salut}\n\nD'abord, tu joues comment ce soir ?`)
     .addFields(
       MODES.map(m => ({
         name: `${m.emoji} ${m.label}`,
@@ -520,7 +561,11 @@ module.exports = {
     // ces boutons, et un seul écran est vivant à la fois.
     let dernier = null;
 
-    await interaction.editReply(modeScreen(progress, false, null));
+    // Tirée une fois pour toute la commande : les allers-retours entre écrans ne
+    // doivent pas donner l'impression d'avoir changé d'interlocuteur en chemin.
+    const salut = salutation();
+
+    await interaction.editReply(modeScreen(progress, false, null, salut));
     const message = await interaction.fetchReply();
 
     const collector = message.createMessageComponentCollector({
@@ -590,8 +635,11 @@ module.exports = {
 
       // On ne remplace pas un engagement en silence
       if (precedent && precedent.cible !== bloc.objectif.cible) {
+        const rappel = precedent.lien
+          ? `**[${precedent.cible}](${precedent.lien})**`
+          : `**${precedent.cible}**`;
         await i.followUp({
-          content: `📌 Ton objectif précédent — **${precedent.cible}** — a été remplacé.`,
+          content: `📌 Ton objectif précédent — ${rappel} — a été remplacé.`,
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -612,10 +660,10 @@ module.exports = {
       try {
         if (action === 'aide')    return i.reply(aideScreen(progress));
         if (action === 'prendre') return prendreObjectif(i);
-        if (action === 'home')    return i.update(modeScreen(progress, tout, groupe));
+        if (action === 'home')    return i.update(modeScreen(progress, tout, groupe, salut));
 
         const mode = getMode(modeId);
-        if (!mode) return i.update(modeScreen(progress, tout, groupe));
+        if (!mode) return i.update(modeScreen(progress, tout, groupe, salut));
 
         // La bascule renvoie sur l'écran d'où elle a été actionnée
         if (action === 'bascule') {

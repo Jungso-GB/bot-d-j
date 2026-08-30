@@ -43,7 +43,10 @@ const SORTIE_MAX_TOKENS = 1500;
 
 // Plafonds de sécurité sur ce qui revient : on affiche dans un embed Discord,
 // et un modèle bavard ne doit pas pouvoir faire exploser la mise en page.
-const ACCROCHE_MAX = 260;
+// L'accroche est là pour donner le ton, pas pour raconter l'objectif : les
+// étapes juste en dessous le font mieux qu'elle. Une seule phrase, donc, et le
+// plafond est assez bas pour qu'un modèle bavard soit coupé plutôt que suivi.
+const ACCROCHE_MAX = 150;
 const ETAPE_MAX    = 140;
 const ETAPES_MAX   = 4;
 
@@ -80,12 +83,22 @@ RÈGLES ABSOLUES
    il ne noie pas : une tournure ou deux suffisent, les étapes doivent rester
    immédiatement actionnables. Jamais de juron par ligne.
 6. Français de France.
+7. L'accroche ouvre sur une interpellation de la maison, en clin d'œil au nom de
+   la guilde : "Bon, mon jambonneau", "Alors, mon petit lardon", "Écoute-moi
+   bien, vieille couenne", "Par ma barbe, camarade"… Varie d'une fois sur
+   l'autre, ne reprends pas toujours la même, et garde-la affectueuse : on
+   taquine un compagnon de guilde, on ne le méprise pas.
 
 FORMAT DE RÉPONSE — un objet JSON, rien d'autre, sans balises de code :
-{"accroche": "une ou deux phrases qui donnent envie de s'y mettre ce soir",
+{"accroche": "l'interpellation puis UNE phrase courte qui donne envie de s'y mettre",
  "etapes": ["étape courte et actionnable", "…"]}
 
-Entre 2 et 4 étapes. Chaque étape tient en une ligne.`;
+L'accroche fait 20 mots au maximum, interpellation comprise. Elle donne le ton,
+elle ne résume pas l'objectif ni ne recopie les étapes — celles-ci disent déjà
+tout. Une accroche trop longue est coupée à l'affichage.
+
+Entre 2 et 4 étapes. Chaque étape tient en une ligne. C'est là que va l'utile :
+le "comment s'y prendre", pas le décor.`;
 
 /**
  * Tronque une chaîne trop longue sur une frontière de mot.
@@ -230,4 +243,4 @@ async function rediger(settings, objectif, activity, live) {
   return reprise;
 }
 
-module.exports = { rediger };
+module.exports = { rediger, borner };
